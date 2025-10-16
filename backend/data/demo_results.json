@@ -1,0 +1,51 @@
+{
+  "pareto_front": [
+    {
+      "id": 1,
+      "parameters": {
+        "base_length": 40.0,
+        "base_width": 27.36,
+        "base_thickness": 4.45,
+        "rib_count": 3,
+        "rib_thickness": 1.5,
+        "fillet_radius": 1.43,
+        "hole_diameter": 3.63
+      },
+      "mass": 9.16,
+      "cost": 10.32,
+      "stl_file": "bracket_6602862436636589763.stl"
+    },
+    {
+      "id": 0,
+      "parameters": {
+        "base_length": 40.0,
+        "base_width": 27.64,
+        "base_thickness": 4.4,
+        "rib_count": 3,
+        "rib_thickness": 1.5,
+        "fillet_radius": 1.03,
+        "hole_diameter": 3.41
+      },
+      "mass": 9.19,
+      "cost": 10.31,
+      "stl_file": "bracket_1194787872708296001.stl"
+    },
+    {
+      "id": 2,
+      "parameters": {
+        "base_length": 40.0,
+        "base_width": 27.64,
+        "base_thickness": 4.4,
+        "rib_count": 3,
+        "rib_thickness": 1.5,
+        "fillet_radius": 1.03,
+        "hole_diameter": 3.98
+      },
+      "mass": 9.19,
+      "cost": 10.31,
+      "stl_file": "bracket_500682805796136672.stl"
+    }
+  ],
+  "n_generations": 40,
+  "n_evaluations": 1200
+}
