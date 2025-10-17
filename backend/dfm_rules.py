@@ -76,6 +76,18 @@ def check_dfm_rules(params, manufacturing_method='3d_printing'):
         violations.append(
             f"Hole too close to edge (need 2x diameter clearance)")
 
+    # Rule 9: Support/overhang heuristic
+    # Thin ribs on tall structures may need support material
+    rib_height = 20.0  # Assume ~20mm rib height for this design
+    if params['rib_thickness'] < 2.0 and rib_height > 20:
+        warnings.append(
+            f"Thin ribs ({params['rib_thickness']}mm) on tall structure may need support material")
+
+    # Rule 10: Warping risk for thick bases
+    if params['base_thickness'] > 6.0:
+        warnings.append(
+            f"Thick base ({params['base_thickness']}mm) has higher warping risk - use heated bed")
+
     is_valid = len(violations) == 0
 
     return {
@@ -83,6 +95,41 @@ def check_dfm_rules(params, manufacturing_method='3d_printing'):
         'violations': violations,
         'warnings': warnings
     }
+
+
+def calculate_print_readiness_score(params, dfm_result, print_time_hours):
+    """
+    Calculate manufacturing readiness score (0-100).
+
+    Start at 100, subtract penalties for:
+    - DFM violations (10 points each)
+    - DFM warnings (5 points each)
+    - Long print time (up to 20 points)
+
+    Args:
+        params (dict): Design parameters
+        dfm_result (dict): Result from check_dfm_rules()
+        print_time_hours (float): Estimated print time in hours
+
+    Returns:
+        int: Score from 0-100
+    """
+    score = 100
+
+    # Penalty for violations (10 points each)
+    violation_penalty = 10 * len(dfm_result['violations'])
+
+    # Penalty for warnings (5 points each)
+    warning_penalty = 5 * len(dfm_result['warnings'])
+
+    # Penalty for long print time (up to 20 points)
+    # Assume 2 hours is ideal, more than 4 hours gets max penalty
+    score_time = min(20, int(print_time_hours / 2 * 20))
+
+    # Calculate final score
+    score = max(0, score - violation_penalty - warning_penalty - score_time)
+
+    return int(score)
 
 
 # Test function

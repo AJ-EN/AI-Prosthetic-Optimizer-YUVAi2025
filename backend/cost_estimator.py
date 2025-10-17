@@ -88,15 +88,24 @@ def calculate_manufacturing_cost(params, material_name, manufacturing_method='3d
     # Total cost
     total_cost = material_cost + machine_cost + setup_cost
 
+    # Get print time for readiness score
+    if manufacturing_method == '3d_printing':
+        manufacturing_time = print_time_hours
+    elif manufacturing_method == 'cnc_milling':
+        manufacturing_time = milling_time_hours
+    else:
+        manufacturing_time = 1.0
+
     return {
         'total_cost': round(total_cost, 2),
         'material_cost': round(material_cost, 2),
         'machine_cost': round(machine_cost, 2),
         'setup_cost': setup_cost,
+        'print_time_hours': round(manufacturing_time, 2),
         'breakdown': {
             'mass_kg': round(mass_kg, 4),
             'volume_cm3': round(total_volume_cm3, 2),
-            'manufacturing_time_hours': round(print_time_hours if manufacturing_method == '3d_printing' else milling_time_hours, 2)
+            'manufacturing_time_hours': round(manufacturing_time, 2)
         }
     }
 

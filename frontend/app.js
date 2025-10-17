@@ -52,6 +52,7 @@ async function runOptimization() {
             console.log('✅ Optimization complete:', data.results);
             currentResults = data.results;
             displayResults(data.results);
+            displayMentorInsights(data.results);
         } else {
             alert('Optimization failed: ' + data.error);
         }
@@ -83,6 +84,11 @@ async function loadDemo() {
             console.log('✅ Demo loaded:', data.results);
             currentResults = data.results;
             displayResults(data.results);
+
+            // Display mentor insights if available
+            if (data.results.mentor_log || data.results.mentor_summary) {
+                displayMentorInsights(data.results);
+            }
 
             if (data.cached) {
                 console.log('📦 Results were cached');
@@ -116,6 +122,9 @@ function displayResults(results) {
 
     // Render Pareto chart
     renderParetoChart(paretoFront);
+
+    // Populate designs table
+    populateDesignsTable(paretoFront);
 
     // Select first design by default
     selectDesign(paretoFront[0]);
@@ -224,6 +233,41 @@ function selectDesign(design) {
     document.getElementById('info-mass').textContent = design.mass.toFixed(2);
     document.getElementById('info-cost').textContent = design.cost.toFixed(2);
     document.getElementById('info-id').textContent = design.id + 1;
+
+    // Update print readiness score with color coding
+    const score = design.print_score || 0;
+    const scoreElement = document.getElementById('readiness-score');
+    const containerElement = document.getElementById('readiness-container');
+
+    scoreElement.textContent = score;
+
+    // Color code based on score
+    if (score >= 80) {
+        scoreElement.className = 'text-2xl font-bold text-green-600';
+        containerElement.className = 'bg-white p-3 rounded-lg border-2 border-green-500';
+    } else if (score >= 60) {
+        scoreElement.className = 'text-2xl font-bold text-yellow-600';
+        containerElement.className = 'bg-white p-3 rounded-lg border-2 border-yellow-500';
+    } else {
+        scoreElement.className = 'text-2xl font-bold text-red-600';
+        containerElement.className = 'bg-white p-3 rounded-lg border-2 border-red-500';
+    }
+
+    // Update print time
+    const printTime = design.print_time_hours || 0;
+    document.getElementById('readiness-time').textContent = `Print time: ~${printTime.toFixed(1)}h`;
+
+    // Update sustainability metrics
+    const co2 = design.co2_kg || 0;
+    const efficiency = design.efficiency_index || 0;
+
+    document.getElementById('co2-value').textContent = co2.toFixed(3);
+    document.getElementById('efficiency-value').textContent = efficiency.toFixed(2);
+
+    // Update efficiency bar (scale to 0-100%, cap at efficiency of 20 for visualization)
+    const maxEfficiency = 20; // Assume max efficiency of 20 for scaling
+    const efficiencyPercent = Math.min((efficiency / maxEfficiency) * 100, 100);
+    document.getElementById('efficiency-bar').style.width = `${efficiencyPercent}%`;
 
     // Display parameters
     const paramsDiv = document.getElementById('info-params');
@@ -417,4 +461,127 @@ async function downloadManufacturingPack(designId) {
         button.innerHTML = '📦 Download Manufacturing Pack';
         button.disabled = false;
     }
+}
+
+/**
+ * Display AI Mentor insights from optimization
+ */
+function displayMentorInsights(results) {
+    console.log('📚 Displaying AI Mentor insights');
+
+    // Show mentor container, hide placeholder
+    document.getElementById('mentor-container').classList.remove('hidden');
+    document.getElementById('mentor-placeholder').classList.add('hidden');
+
+    // Display generation log
+    const logDiv = document.getElementById('mentor-log');
+    if (results.mentor_log && results.mentor_log.length > 0) {
+        logDiv.innerHTML = results.mentor_log
+            .map(log => `
+                <div class="flex items-start space-x-2 p-2 hover:bg-purple-50 rounded transition">
+                    <span class="text-purple-600 text-sm">▸</span>
+                    <span class="text-sm text-gray-700">${log}</span>
+                </div>
+            `)
+            .join('');
+
+        // Auto-scroll to bottom
+        logDiv.scrollTop = logDiv.scrollHeight;
+    } else {
+        logDiv.innerHTML = '<p class="text-gray-500 text-sm">No generation logs available</p>';
+    }
+
+    // Display summary
+    const summaryDiv = document.getElementById('mentor-summary');
+    if (results.mentor_summary) {
+        summaryDiv.textContent = results.mentor_summary;
+    } else {
+        summaryDiv.innerHTML = '<p class="text-gray-500">No summary insights available</p>';
+    }
+
+    console.log('✅ AI Mentor panel updated');
+}
+
+/**
+ * Populate the designs comparison table
+ */
+function populateDesignsTable(designs) {
+    const tbody = document.getElementById('designs-table-body');
+
+    tbody.innerHTML = designs.map(design => {
+        const score = design.print_score || 0;
+        let badgeClass = 'bg-green-100 text-green-800';
+        if (score < 60) badgeClass = 'bg-red-100 text-red-800';
+        else if (score < 80) badgeClass = 'bg-yellow-100 text-yellow-800';
+
+        const co2 = design.co2_kg || 0;
+        const efficiency = design.efficiency_index || 0;
+
+        return `
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="selectDesignById(${design.id})">
+                <td class="px-2 py-2">${design.id + 1}</td>
+                <td class="px-2 py-2">${design.mass.toFixed(2)}</td>
+                <td class="px-2 py-2">₹${design.cost.toFixed(2)}</td>
+                <td class="px-2 py-2">
+                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass}">
+                        ${score}/100
+                    </span>
+                </td>
+                <td class="px-2 py-2 text-green-700 font-semibold">${co2.toFixed(3)}</td>
+                <td class="px-2 py-2 font-semibold">${efficiency.toFixed(2)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * Select design by ID from table click
+ */
+function selectDesignById(designId) {
+    if (!currentResults || !currentResults.pareto_front) return;
+
+    const design = currentResults.pareto_front.find(d => d.id === designId);
+    if (design) {
+        selectDesign(design);
+    }
+}
+
+/**
+ * Sort table by column
+ */
+let currentSort = { column: null, ascending: true };
+
+function sortTable(column) {
+    if (!currentResults || !currentResults.pareto_front) return;
+
+    const designs = [...currentResults.pareto_front];
+
+    // Toggle sort direction if clicking same column
+    if (currentSort.column === column) {
+        currentSort.ascending = !currentSort.ascending;
+    } else {
+        currentSort.column = column;
+        currentSort.ascending = true;
+    }
+
+    // Sort the designs
+    designs.sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+
+        // For ID, add 1 to match display
+        if (column === 'id') {
+            aVal += 1;
+            bVal += 1;
+        }
+
+        if (currentSort.ascending) {
+            return aVal > bVal ? 1 : -1;
+        } else {
+            return aVal < bVal ? 1 : -1;
+        }
+    });
+
+    // Repopulate table
+    populateDesignsTable(designs);
 }

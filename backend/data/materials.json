@@ -1,29 +1,32 @@
 {
-    "PLA": {
-        "name": "PLA (3D Printing)",
-        "youngs_modulus": 3.5,
-        "poissons_ratio": 0.36,
-        "density": 1.25,
-        "yield_strength": 50,
-        "cost_per_kg": 25,
-        "color": "#3B82F6"
-    },
-    "Aluminum6061": {
-        "name": "Aluminum 6061-T6",
-        "youngs_modulus": 69,
-        "poissons_ratio": 0.33,
-        "density": 2.70,
-        "yield_strength": 276,
-        "cost_per_kg": 350,
-        "color": "#9CA3AF"
-    },
-    "Steel1045": {
-        "name": "Steel 1045",
-        "youngs_modulus": 205,
-        "poissons_ratio": 0.29,
-        "density": 7.85,
-        "yield_strength": 530,
-        "cost_per_kg": 80,
-        "color": "#6B7280"
-    }
+  "PLA": {
+    "name": "PLA (3D Printing)",
+    "youngs_modulus": 3.5,
+    "poissons_ratio": 0.36,
+    "density": 1.25,
+    "yield_strength": 50,
+    "cost_per_kg": 25,
+    "co2_per_kg": 1.8,
+    "color": "#3B82F6"
+  },
+  "Aluminum6061": {
+    "name": "Aluminum 6061-T6",
+    "youngs_modulus": 69,
+    "poissons_ratio": 0.33,
+    "density": 2.7,
+    "yield_strength": 276,
+    "cost_per_kg": 350,
+    "co2_per_kg": 10.0,
+    "color": "#9CA3AF"
+  },
+  "Steel1045": {
+    "name": "Steel 1045",
+    "youngs_modulus": 205,
+    "poissons_ratio": 0.29,
+    "density": 7.85,
+    "yield_strength": 530,
+    "cost_per_kg": 80,
+    "co2_per_kg": 1.9,
+    "color": "#6B7280"
+  }
 }
