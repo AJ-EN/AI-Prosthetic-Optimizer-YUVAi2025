@@ -8,6 +8,7 @@ const API_BASE_URL = 'http://localhost:5000';
 let currentResults = null;
 let paretoChart = null;
 let scene, camera, renderer, controls, currentMesh;
+let currentDesignId = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function () {
@@ -216,6 +217,9 @@ function renderParetoChart(paretoFront) {
 function selectDesign(design) {
     console.log('Selected design:', design);
 
+    // Store current design ID for download
+    currentDesignId = design.id;
+
     // Update info panel
     document.getElementById('info-mass').textContent = design.mass.toFixed(2);
     document.getElementById('info-cost').textContent = design.cost.toFixed(2);
@@ -352,4 +356,65 @@ function load3DModel(filename) {
             console.error('Error loading STL:', error);
         }
     );
+}
+
+/**
+ * Download manufacturing package for selected design
+ */
+async function downloadManufacturingPack(designId) {
+    if (designId === null || designId === undefined) {
+        alert('Please select a design first by clicking on a point in the Pareto chart.');
+        return;
+    }
+
+    console.log(`📦 Downloading manufacturing pack for design ${designId}...`);
+
+    try {
+        // Show loading indicator
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '⏳ Preparing download...';
+        button.disabled = true;
+
+        // Fetch the ZIP file
+        const response = await fetch(`${API_BASE_URL}/api/download/${designId}`);
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Download failed');
+        }
+
+        // Get the blob
+        const blob = await response.blob();
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bracket_manufacturing_pack_${designId}.zip`;
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        console.log('✅ Manufacturing pack downloaded successfully');
+
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+
+        // Show success message
+        alert('Manufacturing pack downloaded successfully! 📦\n\nThe ZIP file contains:\n- 3D model (STL)\n- Print settings\n- Bill of Materials\n- Quality Control Checklist\n- README with instructions');
+
+    } catch (error) {
+        console.error('Error downloading manufacturing pack:', error);
+        alert(`Failed to download manufacturing pack: ${error.message}`);
+
+        // Reset button on error
+        const button = event.target;
+        button.innerHTML = '📦 Download Manufacturing Pack';
+        button.disabled = false;
+    }
 }
