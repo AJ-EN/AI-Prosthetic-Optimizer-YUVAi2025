@@ -1,0 +1,154 @@
+/**
+ * AI Prosthetic Optimizer - Animations
+ * Toast notifications and NSGA-II evolution animation
+ */
+
+/* ========================================
+   TOAST NOTIFICATIONS
+   ======================================== */
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  padding: 1rem 1.5rem;
+  max-width: 400px;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease-out;
+  border-left: 4px solid #10b981;
+}
+
+.toast.error {
+  border-left-color: #ef4444;
+}
+
+.toast.info {
+  border-left-color: #3b82f6;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.toast.hiding {
+  animation: slideOutRight 0.3s ease-in;
+}
+
+/* ========================================
+   NSGA-II EVOLUTION ANIMATION
+   ======================================== */
+
+#nsga-animation {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.pareto-front-line {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border: none;
+}
+
+.pareto-front-line::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    to bottom right,
+    transparent 48%,
+    #10b981 49%,
+    #10b981 51%,
+    transparent 52%
+  );
+  opacity: 0.3;
+}
+
+.evolving-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: evolveDot 3s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes evolveDot {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50px, -50px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Stagger animation delays for evolving dots */
+.evolving-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+.evolving-dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.evolving-dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+.evolving-dot:nth-child(4) {
+  animation-delay: 0.9s;
+}
+.evolving-dot:nth-child(5) {
+  animation-delay: 1.2s;
+}
+.evolving-dot:nth-child(6) {
+  animation-delay: 1.5s;
+}
+.evolving-dot:nth-child(7) {
+  animation-delay: 1.8s;
+}
+.evolving-dot:nth-child(8) {
+  animation-delay: 2.1s;
+}
+.evolving-dot:nth-child(9) {
+  animation-delay: 2.4s;
+}
+.evolving-dot:nth-child(10) {
+  animation-delay: 2.7s;
+}

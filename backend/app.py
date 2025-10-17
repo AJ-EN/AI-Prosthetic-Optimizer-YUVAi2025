@@ -15,6 +15,7 @@ from io import BytesIO
 from optimizer import run_optimization
 from geometry_generator import generate_bracket_stl
 from material_library import load_materials
+from material_advisor import get_material_advisor
 
 app = Flask(__name__)
 CORS(app)  # Allow frontend to access API
@@ -385,6 +386,81 @@ Generated on: {os.popen('date').read().strip()}
         }), 500
 
 
+@app.route('/api/material-advice', methods=['POST'])
+def material_advice():
+    """
+    Get smart material recommendation based on application requirements.
+
+    Request body:
+        load (float): Applied load in Newtons
+        environment (str): "medical", "industrial", "outdoor", or "general"
+        budget (str): "low", "medium", or "high"
+
+    Returns:
+        Recommendation with material, rationale, design tips, and alternatives
+    """
+    try:
+        data = request.get_json()
+
+        # Validate inputs
+        load = float(data.get('load', 100))
+        environment = data.get('environment', 'general')
+        budget = data.get('budget', 'medium')
+
+        # Validate environment
+        valid_environments = ['medical', 'industrial', 'outdoor', 'general']
+        if environment.lower() not in valid_environments:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid environment. Must be one of: {", ".join(valid_environments)}'
+            }), 400
+
+        # Validate budget
+        valid_budgets = ['low', 'medium', 'high']
+        if budget.lower() not in valid_budgets:
+            return jsonify({
+                'success': False,
+                'error': f'Invalid budget. Must be one of: {", ".join(valid_budgets)}'
+            }), 400
+
+        # Validate load
+        if load <= 0:
+            return jsonify({
+                'success': False,
+                'error': 'Load must be greater than 0'
+            }), 400
+
+        print(
+            f"[API] Material advice request: {load}N, {environment}, {budget} budget")
+
+        # Get recommendation from advisor
+        advisor = get_material_advisor()
+        recommendation = advisor.get_recommendation(load, environment, budget)
+
+        # Get material comparison
+        comparison = advisor.compare_materials(load)
+
+        print(f"[API] Recommended: {recommendation['material']}")
+
+        return jsonify({
+            'success': True,
+            'recommendation': recommendation,
+            'comparison': comparison
+        })
+
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'error': f'Invalid input: {str(e)}'
+        }), 400
+    except Exception as e:
+        print(f"[API] Error in material advice: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.route('/api/status', methods=['GET'])
 def status():
     """Get API status and statistics."""
@@ -416,6 +492,7 @@ if __name__ == '__main__':
     print("  GET  /api/materials        - List available materials")
     print("  POST /api/optimize         - Run optimization")
     print("  GET  /api/demo             - Get demo results (fast)")
+    print("  POST /api/material-advice  - Get smart material recommendation")
     print("  GET  /api/status           - API health check")
     print("  GET  /models/<file>        - Serve STL files")
     print("  GET  /api/download/<id>    - Download manufacturing pack (ZIP)")

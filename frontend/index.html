@@ -11,44 +11,13 @@
     <!-- Chart.js for Pareto front -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.js"></script>
 
-    <style>
-      body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      }
-
-      #viewer-container {
-        width: 100%;
-        height: 400px;
-        background: #1a202c;
-        border-radius: 0.5rem;
-      }
-
-      .loading-spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 20px auto;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-    </style>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/animations.css">
   </head>
 
   <body class="p-4">
-    <!-- Header -->
+    <!-- Header -->1
     <div class="max-w-7xl mx-auto mb-6">
       <div class="bg-white rounded-lg shadow-xl p-6">
         <h1 class="text-4xl font-bold text-gray-800 mb-2">
@@ -156,14 +125,40 @@
             >
               ⚡ Load Demo Results (Instant)
             </button>
+
+            <button
+              id="advisor-btn"
+              onclick="openMaterialAdvisor()"
+              class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
+            >
+              🧠 Smart Material Advisor
+            </button>
           </div>
         </div>
 
         <!-- Loading State -->
-        <div id="loading-state" class="hidden mt-6 text-center">
-          <div class="loading-spinner"></div>
-          <p class="text-gray-600 mt-2">Optimizing designs...</p>
-          <p class="text-sm text-gray-500">This may take 2-4 minutes</p>
+        <div id="loading-state" class="hidden mt-6">
+          <!-- NSGA-II Animation -->
+          <div id="nsga-animation" class="mb-4">
+            <div class="pareto-front-line"></div>
+            <!-- Evolving dots -->
+            <div class="evolving-dot" style="top: 80%; left: 70%;"></div>
+            <div class="evolving-dot" style="top: 75%; left: 65%;"></div>
+            <div class="evolving-dot" style="top: 85%; left: 75%;"></div>
+            <div class="evolving-dot" style="top: 70%; left: 60%;"></div>
+            <div class="evolving-dot" style="top: 90%; left: 80%;"></div>
+            <div class="evolving-dot" style="top: 65%; left: 55%;"></div>
+            <div class="evolving-dot" style="top: 80%; left: 70%;"></div>
+            <div class="evolving-dot" style="top: 75%; left: 65%;"></div>
+            <div class="evolving-dot" style="top: 85%; left: 75%;"></div>
+            <div class="evolving-dot" style="top: 70%; left: 60%;"></div>
+          </div>
+          
+          <div class="text-center">
+            <p class="text-gray-700 font-semibold text-lg mb-1">🧬 Evolving better designs…</p>
+            <p class="text-sm text-gray-500">NSGA-II exploring design space</p>
+            <p class="text-xs text-gray-400 mt-2">This may take 2-4 minutes</p>
+          </div>
         </div>
       </div>
 
@@ -173,8 +168,47 @@
 
         <div id="results-container" class="hidden">
           <!-- Chart -->
-          <div class="mb-4">
-            <canvas id="pareto-chart" height="250"></canvas>
+          <div class="mb-4" style="position: relative; height: 300px;">
+            <canvas id="pareto-chart"></canvas>
+
+            <!-- Comparison Mode Controls -->
+            <div
+              class="mt-3 flex items-center justify-between bg-purple-50 p-3 rounded-lg border border-purple-200"
+            >
+              <div class="text-xs text-gray-700">
+                <span class="font-semibold">💡 Tip:</span> Shift+Click on chart
+                points or use Compare Mode to select 2 designs
+              </div>
+              <button
+                id="compare-btn"
+                onclick="toggleComparisonMode()"
+                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold text-sm"
+              >
+                🔍 Compare Designs
+              </button>
+            </div>
+          </div>
+
+          <!-- Comparison Card -->
+          <div
+            id="comparison-card"
+            class="hidden mb-4 bg-gradient-to-r from-green-50 to-amber-50 rounded-lg border-2 border-purple-300 p-4"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-gray-800 flex items-center">
+                <span class="text-xl mr-2">⚖️</span>
+                Design Comparison
+              </h3>
+              <button
+                onclick="clearComparison()"
+                class="text-xs text-gray-600 hover:text-red-600 font-semibold"
+              >
+                ✕ Clear
+              </button>
+            </div>
+            <div id="comparison-content">
+              <!-- Populated dynamically -->
+            </div>
           </div>
 
           <!-- Selected Design Info -->
@@ -269,7 +303,7 @@
 
             <!-- Download Button -->
             <button
-              onclick="downloadManufacturingPack(currentDesignId)"
+              onclick="downloadManufacturingPack(event, currentDesignId)"
               class="mt-3 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow-md"
             >
               📦 Download Manufacturing Pack
@@ -355,58 +389,77 @@
 
     <!-- 3D Viewer Section -->
     <div class="max-w-7xl mx-auto mt-6">
-      <div class="bg-white rounded-lg shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">3D Model Viewer</h2>
-        <div id="viewer-container"></div>
-        <p class="text-sm text-gray-500 mt-2 text-center">
-          Click a point on the Pareto chart to view the 3D model
-        </p>
+      <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+        <button
+          onclick="toggle3DViewer()"
+          class="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition"
+        >
+          <h2 class="text-2xl font-bold text-gray-800">
+            🎨 3D Model Viewer
+          </h2>
+          <span id="viewer-toggle-icon" class="text-2xl">▼</span>
+        </button>
+        <div id="viewer-section" class="hidden">
+          <div class="p-6">
+            <div id="viewer-container"></div>
+            <p class="text-sm text-gray-500 mt-2 text-center">
+              Click a point on the Pareto chart to view the 3D model
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- AI Mentor Panel -->
     <div class="max-w-7xl mx-auto mt-6">
       <div
-        class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-xl p-6 border-2 border-purple-200"
+        class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-xl border-2 border-purple-200 overflow-hidden"
       >
-        <div class="flex items-center mb-4">
-          <span class="text-3xl mr-3">🎓</span>
-          <h2 class="text-2xl font-bold text-gray-800">
-            AI Mentor - Optimization Insights
-          </h2>
-        </div>
+        <button
+          onclick="toggleMentor()"
+          class="w-full p-4 flex items-center justify-between hover:bg-purple-100 transition"
+        >
+          <div class="flex items-center">
+            <span class="text-3xl mr-3">🎓</span>
+            <h2 class="text-2xl font-bold text-gray-800">
+              AI Mentor - Optimization Insights
+            </h2>
+          </div>
+          <span id="mentor-toggle-icon" class="text-2xl">▼</span>
+        </button>
 
-        <div id="mentor-container" class="hidden">
-          <!-- Generation Log -->
-          <div class="mb-4">
-            <h3 class="font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="text-xl mr-2">📊</span>
-              Generation Progress
-            </h3>
-            <div
-              id="mentor-log"
-              class="bg-white rounded-lg p-4 max-h-64 overflow-y-auto space-y-2 border border-purple-200"
-            >
-              <!-- Populated dynamically -->
+        <div id="mentor-section" class="hidden p-6">
+          <div id="mentor-container" class="hidden">
+            <!-- Generation Log -->
+            <div class="mb-4">
+              <h3 class="font-semibold text-gray-700 mb-2 flex items-center">
+                <span class="text-xl mr-2">📊</span>
+                Generation Progress
+              </h3>
+              <div
+                id="mentor-log"
+                class="bg-white rounded-lg p-4 max-h-64 overflow-y-auto space-y-2 border border-purple-200"
+              >
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Summary Insights -->
+            <div>
+              <h3 class="font-semibold text-gray-700 mb-2 flex items-center">
+                <span class="text-xl mr-2">💡</span>
+                Key Insights & Recommendations
+              </h3>
+              <div
+                id="mentor-summary"
+                class="bg-white rounded-lg p-4 border border-purple-200 whitespace-pre-line text-sm leading-relaxed"
+              >
+                <!-- Populated dynamically -->
+              </div>
             </div>
           </div>
 
-          <!-- Summary Insights -->
-          <div>
-            <h3 class="font-semibold text-gray-700 mb-2 flex items-center">
-              <span class="text-xl mr-2">💡</span>
-              Key Insights & Recommendations
-            </h3>
-            <div
-              id="mentor-summary"
-              class="bg-white rounded-lg p-4 border border-purple-200 whitespace-pre-line text-sm leading-relaxed"
-            >
-              <!-- Populated dynamically -->
-            </div>
-          </div>
-        </div>
-
-        <div id="mentor-placeholder" class="text-center py-8 text-gray-400">
+          <div id="mentor-placeholder" class="text-center py-8 text-gray-400">
           <svg
             class="w-16 h-16 mx-auto mb-4"
             fill="none"
@@ -428,12 +481,239 @@
       </div>
     </div>
 
-    <!-- Three.js - LOAD THESE AT THE END, BEFORE app.js -->
+    <!-- Material Advisor Modal -->
+    <div
+      id="advisor-modal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      onclick="closeModalOnBackdrop(event)"
+    >
+      <div
+        class="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        onclick="event.stopPropagation()"
+      >
+        <!-- Modal Header -->
+        <div
+          class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-t-lg"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="text-4xl mr-3">🧠</span>
+              <div>
+                <h2 class="text-2xl font-bold">Smart Material Advisor</h2>
+                <p class="text-purple-100 text-sm">
+                  AI-powered material selection guidance
+                </p>
+              </div>
+            </div>
+            <button
+              onclick="closeMaterialAdvisor()"
+              class="text-white hover:text-gray-200 text-3xl font-light leading-none"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6">
+          <!-- Input Form -->
+          <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+            <h3 class="font-semibold text-gray-800 mb-4">
+              Tell us about your application
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Load Input -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Applied Load (N)</label
+                >
+                <input
+                  type="number"
+                  id="advisor-load"
+                  value="100"
+                  min="1"
+                  max="1000"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <!-- Environment Selection -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Environment</label
+                >
+                <select
+                  id="advisor-environment"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="general">General Use</option>
+                  <option value="medical">Medical/Healthcare</option>
+                  <option value="industrial">Industrial</option>
+                  <option value="outdoor">Outdoor</option>
+                </select>
+              </div>
+
+              <!-- Budget Selection -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Budget</label
+                >
+                <select
+                  id="advisor-budget"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="low">Low (Cost-effective)</option>
+                  <option value="medium" selected>Medium (Balanced)</option>
+                  <option value="high">High (Premium)</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onclick="getMaterialAdvice()"
+              class="mt-4 w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
+            >
+              🔍 Get Recommendation
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div id="advisor-loading" class="hidden text-center py-8">
+            <div class="loading-spinner mx-auto"></div>
+            <p class="text-gray-600 mt-2">Analyzing requirements...</p>
+          </div>
+
+          <!-- Recommendation Results -->
+          <div id="advisor-results" class="hidden">
+            <!-- Recommended Material -->
+            <div
+              class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-6 mb-4"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="text-xl font-bold text-gray-800 mb-2">
+                    ✅ Recommended Material
+                  </h3>
+                  <p
+                    id="recommended-material"
+                    class="text-3xl font-bold text-green-700"
+                  >
+                    -
+                  </p>
+                  <p class="text-sm text-gray-600 mt-1">
+                    <span class="font-semibold">Manufacturing:</span>
+                    <span id="manufacturing-method">-</span>
+                  </p>
+                </div>
+                <div class="text-right text-sm text-gray-600">
+                  <div>
+                    <span class="font-semibold">Cost:</span>
+                    ₹<span id="material-cost">-</span>/kg
+                  </div>
+                  <div>
+                    <span class="font-semibold">Strength:</span>
+                    <span id="material-strength">-</span> MPa
+                  </div>
+                  <div>
+                    <span class="font-semibold">CO₂:</span>
+                    <span id="material-co2">-</span> kg/kg
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rationale -->
+            <div class="mb-4">
+              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
+                <span class="text-xl mr-2">💡</span>
+                Why this material?
+              </h4>
+              <ul
+                id="rationale-list"
+                class="space-y-2 bg-blue-50 p-4 rounded-lg"
+              >
+                <!-- Populated dynamically -->
+              </ul>
+            </div>
+
+            <!-- Design Tips -->
+            <div class="mb-4">
+              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
+                <span class="text-xl mr-2">🔧</span>
+                Design Recommendations
+              </h4>
+              <ul
+                id="design-tips-list"
+                class="space-y-2 bg-yellow-50 p-4 rounded-lg"
+              >
+                <!-- Populated dynamically -->
+              </ul>
+            </div>
+
+            <!-- Alternatives -->
+            <div id="alternatives-section" class="mb-4 hidden">
+              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
+                <span class="text-xl mr-2">🔄</span>
+                Alternative Materials
+              </h4>
+              <div id="alternatives-list" class="space-y-2">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Material Comparison Table -->
+            <div class="mt-6">
+              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
+                <span class="text-xl mr-2">📊</span>
+                Material Comparison for Your Load
+              </h4>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm bg-white rounded-lg">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="px-4 py-2 text-left">Material</th>
+                      <th class="px-4 py-2 text-center">Safety Factor</th>
+                      <th class="px-4 py-2 text-center">Cost (₹/kg)</th>
+                      <th class="px-4 py-2 text-center">CO₂ (kg/kg)</th>
+                      <th class="px-4 py-2 text-center">Suitability</th>
+                    </tr>
+                  </thead>
+                  <tbody id="comparison-table-body" class="divide-y">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="mt-6 text-center">
+              <button
+                onclick="applyRecommendedMaterial()"
+                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold"
+              >
+                ✓ Apply Recommended Material
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2">
+      <!-- Toasts dynamically added here -->
+    </div>
+
+    <!-- Three.js - LOAD THESE AT THE END -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-    <!-- JavaScript - MUST BE LAST -->
+    <!-- JavaScript Modules - Load in order -->
+    <script src="js/config.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/api.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

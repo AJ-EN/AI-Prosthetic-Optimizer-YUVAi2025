@@ -1,109 +1,14 @@
 /**
  * AI Prosthetic Optimizer - Frontend Logic
- * Handles API calls, chart rendering, and 3D visualization
+ * Chart rendering, 3D visualization, UI interactions
+ * (Config, Toast, and API functions moved to separate modules)
  */
-
-const API_BASE_URL = 'http://localhost:5000';
-
-let currentResults = null;
-let paretoChart = null;
-let scene, camera, renderer, controls, currentMesh;
-let currentDesignId = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function () {
     console.log('🚀 AI Prosthetic Optimizer initialized');
     init3DViewer();
 });
-
-/**
- * Run full optimization with user parameters
- */
-async function runOptimization() {
-    const load = parseFloat(document.getElementById('load-input').value);
-    const material = document.getElementById('material-select').value;
-    const popSize = parseInt(document.getElementById('pop-size').value);
-    const generations = parseInt(document.getElementById('generations').value);
-
-    console.log('Starting optimization:', { load, material, popSize, generations });
-
-    // Show loading state
-    document.getElementById('loading-state').classList.remove('hidden');
-    document.getElementById('optimize-btn').disabled = true;
-    document.getElementById('demo-btn').disabled = true;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/optimize`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                load: load,
-                material: material,
-                pop_size: popSize,
-                n_gen: generations
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            console.log('✅ Optimization complete:', data.results);
-            currentResults = data.results;
-            displayResults(data.results);
-            displayMentorInsights(data.results);
-        } else {
-            alert('Optimization failed: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to connect to API. Make sure Flask server is running on port 5000.');
-    } finally {
-        // Hide loading state
-        document.getElementById('loading-state').classList.add('hidden');
-        document.getElementById('optimize-btn').disabled = false;
-        document.getElementById('demo-btn').disabled = false;
-    }
-}
-
-/**
- * Load pre-computed demo results (fast)
- */
-async function loadDemo() {
-    console.log('Loading demo results...');
-
-    document.getElementById('loading-state').classList.remove('hidden');
-    document.getElementById('demo-btn').disabled = true;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/demo`);
-        const data = await response.json();
-
-        if (data.success) {
-            console.log('✅ Demo loaded:', data.results);
-            currentResults = data.results;
-            displayResults(data.results);
-
-            // Display mentor insights if available
-            if (data.results.mentor_log || data.results.mentor_summary) {
-                displayMentorInsights(data.results);
-            }
-
-            if (data.cached) {
-                console.log('📦 Results were cached');
-            }
-        } else {
-            alert('Failed to load demo: ' + data.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to connect to API. Make sure Flask server is running.');
-    } finally {
-        document.getElementById('loading-state').classList.add('hidden');
-        document.getElementById('demo-btn').disabled = false;
-    }
-}
 
 /**
  * Display optimization results
@@ -114,6 +19,15 @@ function displayResults(results) {
     if (!paretoFront || paretoFront.length === 0) {
         alert('No feasible designs found. Try relaxing constraints.');
         return;
+    }
+
+    // Clear any existing comparison
+    clearComparison();
+    comparisonMode = false;
+    const compareBtn = document.getElementById('compare-btn');
+    if (compareBtn) {
+        compareBtn.textContent = '🔍 Compare Designs';
+        compareBtn.className = 'px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold text-sm';
     }
 
     // Show results container
@@ -154,10 +68,33 @@ function renderParetoChart(paretoFront) {
             datasets: [{
                 label: 'Pareto-Optimal Designs',
                 data: dataPoints,
-                backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: function (context) {
+                    const index = context.dataIndex;
+                    const design = paretoFront[dataPoints[index].designIndex];
+                    // Highlight selected designs for comparison
+                    if (selectedDesigns.some(d => d.id === design.id)) {
+                        return selectedDesigns[0]?.id === design.id ?
+                            'rgba(16, 185, 129, 0.9)' : // Green for Design A
+                            'rgba(245, 158, 11, 0.9)';  // Amber for Design B
+                    }
+                    return 'rgba(59, 130, 246, 0.7)';
+                },
+                borderColor: function (context) {
+                    const index = context.dataIndex;
+                    const design = paretoFront[dataPoints[index].designIndex];
+                    if (selectedDesigns.some(d => d.id === design.id)) {
+                        return selectedDesigns[0]?.id === design.id ?
+                            'rgba(16, 185, 129, 1)' :
+                            'rgba(245, 158, 11, 1)';
+                    }
+                    return 'rgba(59, 130, 246, 1)';
+                },
                 borderWidth: 2,
-                pointRadius: 8,
+                pointRadius: function (context) {
+                    const index = context.dataIndex;
+                    const design = paretoFront[dataPoints[index].designIndex];
+                    return selectedDesigns.some(d => d.id === design.id) ? 10 : 8;
+                },
                 pointHoverRadius: 12
             }]
         },
@@ -168,7 +105,13 @@ function renderParetoChart(paretoFront) {
                 if (elements.length > 0) {
                     const index = elements[0].index;
                     const design = paretoFront[dataPoints[index].designIndex];
-                    selectDesign(design);
+
+                    // Check if shift key is pressed for comparison mode
+                    if (event.native.shiftKey || comparisonMode) {
+                        handleComparisonSelect(design);
+                    } else {
+                        selectDesign(design);
+                    }
                 }
             },
             plugins: {
@@ -285,27 +228,213 @@ function selectDesign(design) {
 }
 
 /**
+ * Toggle comparison mode
+ */
+function toggleComparisonMode() {
+    comparisonMode = !comparisonMode;
+    const button = document.getElementById('compare-btn');
+
+    if (comparisonMode) {
+        button.textContent = '🔍 Comparison Mode: ON';
+        button.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold';
+        showToast('🔍 Comparison Mode activated! Click on 2 designs to compare.', 'info', 4000);
+    } else {
+        button.textContent = '🔍 Compare Designs';
+        button.className = 'px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold';
+        // Clear selections when turning off
+        clearComparison();
+    }
+}
+
+/**
+ * Handle design selection for comparison
+ */
+function handleComparisonSelect(design) {
+    // Check if design is already selected
+    const existingIndex = selectedDesigns.findIndex(d => d.id === design.id);
+
+    if (existingIndex !== -1) {
+        // Deselect if clicking same design
+        selectedDesigns.splice(existingIndex, 1);
+    } else if (selectedDesigns.length < 2) {
+        // Add to selection (max 2)
+        selectedDesigns.push(design);
+    } else {
+        // Replace oldest selection
+        selectedDesigns.shift();
+        selectedDesigns.push(design);
+    }
+
+    // Update chart colors
+    if (paretoChart) {
+        paretoChart.update();
+    }
+
+    // Show/update comparison card
+    if (selectedDesigns.length === 2) {
+        displayComparison();
+    } else if (selectedDesigns.length === 1) {
+        // Show partial selection
+        document.getElementById('comparison-card').classList.remove('hidden');
+        document.getElementById('comparison-content').innerHTML = `
+            <p class="text-sm text-gray-600 text-center py-4">
+                <span class="font-semibold text-green-600">Design ${selectedDesigns[0].id + 1}</span> selected.<br>
+                <span class="text-xs">Shift+Click or use Compare Mode to select a second design</span>
+            </p>
+        `;
+    } else {
+        // Hide if no selections
+        document.getElementById('comparison-card').classList.add('hidden');
+    }
+}
+
+/**
+ * Display comparison card with delta calculations
+ */
+function displayComparison() {
+    const designA = selectedDesigns[0];
+    const designB = selectedDesigns[1];
+
+    // Calculate deltas
+    const massDelta = designB.mass - designA.mass;
+    const costDelta = designB.cost - designA.cost;
+
+    // Calculate safety factors
+    const stressA = designA.stress_predicted || 0;
+    const stressB = designB.stress_predicted || 0;
+
+    // Get material yield strength from current results
+    const yieldStrength = currentResults?.material?.yield_strength || 300; // Default if not available
+    const safetyA = stressA > 0 ? yieldStrength / stressA : 0;
+    const safetyB = stressB > 0 ? yieldStrength / stressB : 0;
+    const safetyDeltaPercent = safetyA > 0 ? ((safetyB - safetyA) / safetyA * 100) : 0;
+
+    const printScoreDelta = (designB.print_score || 0) - (designA.print_score || 0);
+    const co2Delta = (designB.co2_kg || 0) - (designA.co2_kg || 0);
+    const efficiencyDelta = (designB.efficiency_index || 0) - (designA.efficiency_index || 0);
+
+    // Helper function to format delta with color
+    const formatDelta = (value, unit = '', inverse = false) => {
+        const isPositive = value > 0;
+        const displayPositive = inverse ? !isPositive : isPositive;
+        const color = displayPositive ? 'text-green-600' : 'text-red-600';
+        const sign = value > 0 ? '+' : '';
+        return `<span class="${color} font-semibold">${sign}${value.toFixed(value < 1 ? 3 : 2)}${unit}</span>`;
+    };
+
+    const formatPercent = (value) => {
+        const color = value > 0 ? 'text-green-600' : 'text-red-600';
+        const sign = value > 0 ? '+' : '';
+        return `<span class="${color} font-semibold">${sign}${value.toFixed(1)}%</span>`;
+    };
+
+    const comparisonHTML = `
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left font-semibold text-gray-700">Metric</th>
+                        <th class="px-3 py-2 text-center font-semibold text-green-700">
+                            <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
+                            Design ${designA.id + 1}
+                        </th>
+                        <th class="px-3 py-2 text-center font-semibold text-amber-700">
+                            <span class="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1"></span>
+                            Design ${designB.id + 1}
+                        </th>
+                        <th class="px-3 py-2 text-center font-semibold text-gray-700">Δ (B - A)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 font-medium text-gray-700">Mass (g)</td>
+                        <td class="px-3 py-2 text-center">${designA.mass.toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">${designB.mass.toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">${formatDelta(massDelta, 'g', true)}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 font-medium text-gray-700">Cost (₹)</td>
+                        <td class="px-3 py-2 text-center">₹${designA.cost.toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">₹${designB.cost.toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">${formatDelta(costDelta, '₹', true)}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 font-medium text-gray-700">Safety Factor</td>
+                        <td class="px-3 py-2 text-center">${safetyA.toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">${safetyB.toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">${formatPercent(safetyDeltaPercent)}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 font-medium text-gray-700">Print Score</td>
+                        <td class="px-3 py-2 text-center">${designA.print_score || 0}/100</td>
+                        <td class="px-3 py-2 text-center">${designB.print_score || 0}/100</td>
+                        <td class="px-3 py-2 text-center">${formatDelta(printScoreDelta, '', false)}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 font-medium text-gray-700">CO₂ (kg)</td>
+                        <td class="px-3 py-2 text-center">${(designA.co2_kg || 0).toFixed(3)}</td>
+                        <td class="px-3 py-2 text-center">${(designB.co2_kg || 0).toFixed(3)}</td>
+                        <td class="px-3 py-2 text-center">${formatDelta(co2Delta, 'kg', true)}</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 font-medium text-gray-700">Efficiency</td>
+                        <td class="px-3 py-2 text-center">${(designA.efficiency_index || 0).toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">${(designB.efficiency_index || 0).toFixed(2)}</td>
+                        <td class="px-3 py-2 text-center">${formatDelta(efficiencyDelta, '', false)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-3 text-xs text-gray-600 bg-blue-50 p-2 rounded">
+            <strong>💡 Interpretation:</strong>
+            <span class="text-green-600">Green</span> = better, 
+            <span class="text-red-600">Red</span> = worse (lower mass/cost/CO₂ are better)
+        </div>
+    `;
+
+    document.getElementById('comparison-card').classList.remove('hidden');
+    document.getElementById('comparison-content').innerHTML = comparisonHTML;
+}
+
+/**
+ * Clear comparison selection
+ */
+function clearComparison() {
+    selectedDesigns = [];
+    document.getElementById('comparison-card').classList.add('hidden');
+
+    // Update chart colors
+    if (paretoChart) {
+        paretoChart.update();
+    }
+}
+
+/**
  * Initialize Three.js 3D viewer
  */
 function init3DViewer() {
     const container = document.getElementById('viewer-container');
+    if (!container) {
+        console.warn('Viewer container not found.');
+        return;
+    }
+
+    const parent = container.parentElement;
+    const initialWidth = container.clientWidth || (parent ? parent.clientWidth : 0) || 600;
+    const initialHeight = container.clientHeight || (parent ? parent.clientHeight : 0) || 400;
 
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a202c);
 
     // Camera
-    camera = new THREE.PerspectiveCamera(
-        45,
-        container.clientWidth / container.clientHeight,
-        0.1,
-        1000
-    );
+    camera = new THREE.PerspectiveCamera(45, initialWidth / initialHeight, 0.1, 1000);
     camera.position.set(80, 80, 80);
 
     // Renderer
     renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setSize(initialWidth, initialHeight);
     container.appendChild(renderer.domElement);
 
     // Lights
@@ -338,13 +467,36 @@ function init3DViewer() {
     animate();
 
     // Handle window resize
-    window.addEventListener('resize', () => {
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-    });
+    window.addEventListener('resize', resizeViewer);
+
+    // Ensure sizing is correct even when container starts hidden
+    requestAnimationFrame(resizeViewer);
 
     console.log('✅ 3D viewer initialized');
+}
+
+function resizeViewer() {
+    if (!renderer || !camera) {
+        return;
+    }
+
+    const container = document.getElementById('viewer-container');
+    if (!container) {
+        return;
+    }
+
+    let width = container.clientWidth;
+    let height = container.clientHeight;
+
+    if (!width || !height) {
+        const parent = container.parentElement;
+        width = width || (parent ? parent.clientWidth : 0) || 600;
+        height = height || (parent ? parent.clientHeight : 0) || 400;
+    }
+
+    renderer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
 }
 
 /**
@@ -391,6 +543,17 @@ function load3DModel(filename) {
             // Reset camera
             controls.reset();
 
+            // Auto-expand 3D viewer section
+            const section = document.getElementById('viewer-section');
+            const icon = document.getElementById('viewer-toggle-icon');
+            if (section && section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                if (icon) icon.textContent = '▲';
+                requestAnimationFrame(resizeViewer);
+            }
+
+            requestAnimationFrame(resizeViewer);
+
             console.log('✅ 3D model loaded');
         },
         function (xhr) {
@@ -405,63 +568,7 @@ function load3DModel(filename) {
 /**
  * Download manufacturing package for selected design
  */
-async function downloadManufacturingPack(designId) {
-    if (designId === null || designId === undefined) {
-        alert('Please select a design first by clicking on a point in the Pareto chart.');
-        return;
-    }
-
-    console.log(`📦 Downloading manufacturing pack for design ${designId}...`);
-
-    try {
-        // Show loading indicator
-        const button = event.target;
-        const originalText = button.innerHTML;
-        button.innerHTML = '⏳ Preparing download...';
-        button.disabled = true;
-
-        // Fetch the ZIP file
-        const response = await fetch(`${API_BASE_URL}/api/download/${designId}`);
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Download failed');
-        }
-
-        // Get the blob
-        const blob = await response.blob();
-
-        // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `bracket_manufacturing_pack_${designId}.zip`;
-        document.body.appendChild(a);
-        a.click();
-
-        // Cleanup
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        console.log('✅ Manufacturing pack downloaded successfully');
-
-        // Reset button
-        button.innerHTML = originalText;
-        button.disabled = false;
-
-        // Show success message
-        alert('Manufacturing pack downloaded successfully! 📦\n\nThe ZIP file contains:\n- 3D model (STL)\n- Print settings\n- Bill of Materials\n- Quality Control Checklist\n- README with instructions');
-
-    } catch (error) {
-        console.error('Error downloading manufacturing pack:', error);
-        alert(`Failed to download manufacturing pack: ${error.message}`);
-
-        // Reset button on error
-        const button = event.target;
-        button.innerHTML = '📦 Download Manufacturing Pack';
-        button.disabled = false;
-    }
-}
+// REMOVED: downloadManufacturingPack() - Now in js/api.js
 
 /**
  * Display AI Mentor insights from optimization
@@ -497,6 +604,14 @@ function displayMentorInsights(results) {
         summaryDiv.textContent = results.mentor_summary;
     } else {
         summaryDiv.innerHTML = '<p class="text-gray-500">No summary insights available</p>';
+    }
+
+    // Auto-expand AI Mentor section
+    const section = document.getElementById('mentor-section');
+    const icon = document.getElementById('mentor-toggle-icon');
+    if (section && section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        if (icon) icon.textContent = '▲';
     }
 
     console.log('✅ AI Mentor panel updated');
@@ -585,3 +700,199 @@ function sortTable(column) {
     // Repopulate table
     populateDesignsTable(designs);
 }
+
+/**
+ * Material Advisor Functions
+ */
+
+/**
+ * Open material advisor modal
+ */
+function openMaterialAdvisor() {
+    // Pre-fill with current settings
+    const currentLoad = document.getElementById('load-input').value;
+    document.getElementById('advisor-load').value = currentLoad;
+
+    // Show modal
+    document.getElementById('advisor-modal').classList.remove('hidden');
+
+    // Hide results, show form
+    document.getElementById('advisor-results').classList.add('hidden');
+}
+
+/**
+ * Close material advisor modal
+ */
+function closeMaterialAdvisor() {
+    document.getElementById('advisor-modal').classList.add('hidden');
+}
+
+/**
+ * Close modal when clicking backdrop
+ */
+function closeModalOnBackdrop(event) {
+    if (event.target.id === 'advisor-modal') {
+        closeMaterialAdvisor();
+    }
+}
+
+/**
+ * Get material advice from backend
+ */
+// REMOVED: getMaterialAdvice() - Now in js/api.js
+
+/**
+ * Display material recommendation in modal
+ */
+function displayMaterialRecommendation(recommendation, comparison) {
+    // Show results container
+    document.getElementById('advisor-results').classList.remove('hidden');
+
+    // Display recommended material
+    document.getElementById('recommended-material').textContent = recommendation.material_name;
+    document.getElementById('manufacturing-method').textContent = recommendation.manufacturing_method;
+    document.getElementById('material-cost').textContent = recommendation.estimated_cost_per_kg.toFixed(0);
+    document.getElementById('material-strength').textContent = recommendation.yield_strength.toFixed(0);
+    document.getElementById('material-co2').textContent = recommendation.co2_per_kg.toFixed(1);
+
+    // Display rationale
+    const rationaleList = document.getElementById('rationale-list');
+    rationaleList.innerHTML = recommendation.rationale.map(reason => {
+        // Check if this is a warning
+        const isWarning = reason.includes('⚠️') || reason.includes('Warning');
+        const bgClass = isWarning ? 'bg-yellow-100 border-yellow-300' : 'bg-white';
+        const iconClass = isWarning ? '⚠️' : '✓';
+        return `
+            <li class="flex items-start ${bgClass} p-2 rounded border">
+                <span class="mr-2">${iconClass}</span>
+                <span class="text-gray-700">${reason}</span>
+            </li>
+        `;
+    }).join('');
+
+    // Display design tips
+    const tipsList = document.getElementById('design-tips-list');
+    tipsList.innerHTML = recommendation.design_tips.map(tip => `
+        <li class="flex items-start bg-white p-2 rounded border border-yellow-200">
+            <span class="mr-2">💡</span>
+            <span class="text-gray-700">${tip}</span>
+        </li>
+    `).join('');
+
+    // Display alternatives if any
+    if (recommendation.alternatives && recommendation.alternatives.length > 0) {
+        document.getElementById('alternatives-section').classList.remove('hidden');
+        const alternativesList = document.getElementById('alternatives-list');
+        alternativesList.innerHTML = recommendation.alternatives.map(([material, reason]) => `
+            <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                <span class="font-semibold text-gray-800">${material}:</span>
+                <span class="text-gray-600">${reason}</span>
+            </div>
+        `).join('');
+    } else {
+        document.getElementById('alternatives-section').classList.add('hidden');
+    }
+
+    // Display comparison table
+    const tableBody = document.getElementById('comparison-table-body');
+    tableBody.innerHTML = comparison.map(item => {
+        // Color code suitability
+        let suitabilityClass = 'text-gray-600';
+        if (item.suitability === 'Excellent') suitabilityClass = 'text-green-600 font-semibold';
+        else if (item.suitability === 'Good') suitabilityClass = 'text-blue-600 font-semibold';
+        else if (item.suitability === 'Acceptable') suitabilityClass = 'text-yellow-600 font-semibold';
+        else if (item.suitability === 'Insufficient') suitabilityClass = 'text-red-600 font-semibold';
+
+        // Highlight recommended material
+        const isRecommended = item.material === recommendation.material;
+        const rowClass = isRecommended ? 'bg-green-50 font-semibold' : 'hover:bg-gray-50';
+
+        return `
+            <tr class="${rowClass}">
+                <td class="px-4 py-2">
+                    ${isRecommended ? '⭐ ' : ''}${item.material_name}
+                </td>
+                <td class="px-4 py-2 text-center">${item.safety_factor.toFixed(2)}</td>
+                <td class="px-4 py-2 text-center">₹${item.cost_per_kg.toFixed(0)}</td>
+                <td class="px-4 py-2 text-center">${item.co2_per_kg.toFixed(1)}</td>
+                <td class="px-4 py-2 text-center ${suitabilityClass}">${item.suitability}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * Apply recommended material to main form
+ */
+function applyRecommendedMaterial() {
+    if (!currentRecommendation) {
+        showToast('No recommendation available', 'error');
+        return;
+    }
+
+    // Update material select
+    const materialSelect = document.getElementById('material-select');
+    materialSelect.value = currentRecommendation.material;
+
+    // Update load if different
+    const advisorLoad = parseFloat(document.getElementById('advisor-load').value);
+    document.getElementById('load-input').value = advisorLoad;
+
+    // Close modal
+    closeMaterialAdvisor();
+
+    // Show success toast
+    showToast(
+        `✓ Material set to ${currentRecommendation.material_name}, Load set to ${advisorLoad}N. Ready to optimize!`,
+        'success',
+        5000
+    );
+}
+
+/**
+ * Toggle 3D Viewer section visibility
+ */
+function toggle3DViewer() {
+    const section = document.getElementById('viewer-section');
+    const icon = document.getElementById('viewer-toggle-icon');
+
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        if (icon) icon.textContent = '▲';
+        requestAnimationFrame(resizeViewer);
+    } else {
+        section.classList.add('hidden');
+        if (icon) icon.textContent = '▼';
+    }
+}
+
+/**
+ * Toggle AI Mentor section visibility
+ */
+function toggleMentor() {
+    const section = document.getElementById('mentor-section');
+    const icon = document.getElementById('mentor-toggle-icon');
+
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        if (icon) icon.textContent = '▲';
+    } else {
+        section.classList.add('hidden');
+        if (icon) icon.textContent = '▼';
+    }
+}
+
+// Expose UI helpers for inline handlers and API module
+window.displayResults = displayResults;
+window.displayMentorInsights = displayMentorInsights;
+window.toggleComparisonMode = toggleComparisonMode;
+window.clearComparison = clearComparison;
+window.sortTable = sortTable;
+window.selectDesignById = selectDesignById;
+window.openMaterialAdvisor = openMaterialAdvisor;
+window.closeMaterialAdvisor = closeMaterialAdvisor;
+window.closeModalOnBackdrop = closeModalOnBackdrop;
+window.displayMaterialRecommendation = displayMaterialRecommendation;
+window.applyRecommendedMaterial = applyRecommendedMaterial;
+window.toggle3DViewer = toggle3DViewer;
+window.toggleMentor = toggleMentor;
