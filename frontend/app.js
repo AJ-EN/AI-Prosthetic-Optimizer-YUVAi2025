@@ -745,6 +745,19 @@ function closeModalOnBackdrop(event) {
  * Display material recommendation in modal
  */
 function displayMaterialRecommendation(recommendation, comparison) {
+    if (!recommendation) {
+        showToast('No recommendation data received.', 'error');
+        return;
+    }
+
+    // Persist latest recommendation for "Apply" CTA
+    currentRecommendation = recommendation;
+
+    const rationaleItems = Array.isArray(recommendation.rationale) ? recommendation.rationale : [];
+    const designTips = Array.isArray(recommendation.design_tips) ? recommendation.design_tips : [];
+    const alternatives = Array.isArray(recommendation.alternatives) ? recommendation.alternatives : [];
+    const comparisonRows = Array.isArray(comparison) ? comparison : [];
+
     // Show results container
     document.getElementById('advisor-results').classList.remove('hidden');
 
@@ -757,33 +770,35 @@ function displayMaterialRecommendation(recommendation, comparison) {
 
     // Display rationale
     const rationaleList = document.getElementById('rationale-list');
-    rationaleList.innerHTML = recommendation.rationale.map(reason => {
-        // Check if this is a warning
-        const isWarning = reason.includes('⚠️') || reason.includes('Warning');
+    rationaleList.innerHTML = rationaleItems.length ? rationaleItems.map(reason => {
+        const isWarning = typeof reason === 'string' && (reason.includes('⚠️') || reason.includes('Warning'));
         const bgClass = isWarning ? 'bg-yellow-100 border-yellow-300' : 'bg-white';
-        const iconClass = isWarning ? '⚠️' : '✓';
+        const icon = isWarning ? '⚠️' : '✓';
+        const text = typeof reason === 'string' ? reason : String(reason ?? '');
         return `
             <li class="flex items-start ${bgClass} p-2 rounded border">
-                <span class="mr-2">${iconClass}</span>
-                <span class="text-gray-700">${reason}</span>
+                <span class="mr-2">${icon}</span>
+                <span class="text-gray-700">${text}</span>
             </li>
         `;
-    }).join('');
+    }).join('') : '<li class="text-gray-500 text-sm">No rationale provided.</li>';
 
     // Display design tips
     const tipsList = document.getElementById('design-tips-list');
-    tipsList.innerHTML = recommendation.design_tips.map(tip => `
+    tipsList.innerHTML = designTips.length ? designTips.map(tip => {
+        const text = typeof tip === 'string' ? tip : String(tip ?? '');
+        return `
         <li class="flex items-start bg-white p-2 rounded border border-yellow-200">
             <span class="mr-2">💡</span>
-            <span class="text-gray-700">${tip}</span>
-        </li>
-    `).join('');
+            <span class="text-gray-700">${text}</span>
+        </li>`;
+    }).join('') : '<li class="text-gray-500 text-sm">No design tips available.</li>';
 
     // Display alternatives if any
-    if (recommendation.alternatives && recommendation.alternatives.length > 0) {
+    if (alternatives.length > 0) {
         document.getElementById('alternatives-section').classList.remove('hidden');
         const alternativesList = document.getElementById('alternatives-list');
-        alternativesList.innerHTML = recommendation.alternatives.map(([material, reason]) => `
+        alternativesList.innerHTML = alternatives.map(([material, reason]) => `
             <div class="bg-gray-50 p-3 rounded border border-gray-200">
                 <span class="font-semibold text-gray-800">${material}:</span>
                 <span class="text-gray-600">${reason}</span>
@@ -795,7 +810,7 @@ function displayMaterialRecommendation(recommendation, comparison) {
 
     // Display comparison table
     const tableBody = document.getElementById('comparison-table-body');
-    tableBody.innerHTML = comparison.map(item => {
+    tableBody.innerHTML = comparisonRows.length ? comparisonRows.map(item => {
         // Color code suitability
         let suitabilityClass = 'text-gray-600';
         if (item.suitability === 'Excellent') suitabilityClass = 'text-green-600 font-semibold';
@@ -818,7 +833,7 @@ function displayMaterialRecommendation(recommendation, comparison) {
                 <td class="px-4 py-2 text-center ${suitabilityClass}">${item.suitability}</td>
             </tr>
         `;
-    }).join('');
+    }).join('') : '<tr><td colspan="5" class="px-4 py-3 text-center text-gray-500">No comparison data available.</td></tr>';
 }
 
 /**
