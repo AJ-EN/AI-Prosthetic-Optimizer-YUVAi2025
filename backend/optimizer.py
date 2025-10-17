@@ -6,6 +6,7 @@ Uses NSGA-II genetic algorithm to find Pareto-optimal designs.
 import numpy as np
 import pandas as pd
 import joblib
+import os
 from pymoo.core.problem import Problem
 from pymoo.algorithms.moo.nsga2 import NSGA2
 from pymoo.operators.crossover.sbx import SBX
@@ -17,6 +18,13 @@ from pymoo.termination import get_termination
 from material_library import get_material
 from dfm_rules import check_dfm_rules, calculate_print_readiness_score
 from cost_estimator import calculate_manufacturing_cost
+
+
+GLOBAL_STRESS_SIGMA = None
+FEATURE_COLUMNS = [
+    'base_length', 'base_width', 'base_thickness',
+    'rib_count', 'rib_thickness', 'fillet_radius', 'hole_diameter'
+]
 
 
 def predict_with_uncertainty(models, X):
@@ -32,6 +40,33 @@ def predict_with_uncertainty(models, X):
     """
     predictions = np.array([model.predict(X)[0] for model in models])
     return predictions.mean(), predictions.std()
+
+
+def _get_global_stress_sigma(stress_models):
+    """Estimate global stress residual sigma using training data."""
+    global GLOBAL_STRESS_SIGMA
+    if GLOBAL_STRESS_SIGMA is not None:
+        return GLOBAL_STRESS_SIGMA
+
+    data_path = os.path.join('data', 'training_data.csv')
+    try:
+        df = pd.read_csv(data_path)
+        if df.empty:
+            raise ValueError('training dataset empty')
+
+        predictions = np.mean(
+            [model.predict(df[FEATURE_COLUMNS]) for model in stress_models],
+            axis=0
+        )
+        residuals = df['max_stress'].values - predictions
+        GLOBAL_STRESS_SIGMA = float(np.std(residuals, ddof=1))
+        print(
+            f"[Uncertainty] Global stress σ computed: {GLOBAL_STRESS_SIGMA:.3f} MPa")
+    except Exception as exc:
+        GLOBAL_STRESS_SIGMA = None
+        print(f"[Uncertainty] Warning: failed to compute global sigma ({exc})")
+
+    return GLOBAL_STRESS_SIGMA
 
 
 class BracketOptimizationProblem(Problem):
@@ -240,6 +275,9 @@ def run_optimization(load=50.0, material_name='PLA', pop_size=50, n_gen=100):
     problem = BracketOptimizationProblem(
         load, material_name, stress_models, deflection_models)
 
+    global_sigma = _get_global_stress_sigma(stress_models)
+    stress_ci95_placeholder = 1.96 * global_sigma if global_sigma is not None else None
+
     # Configure NSGA-II algorithm
     print(f"\nConfiguring NSGA-II:")
     print(f"  Population size: {pop_size}")
@@ -319,7 +357,7 @@ def run_optimization(load=50.0, material_name='PLA', pop_size=50, n_gen=100):
             stress_mean if stress_mean > 0 else 0
         efficiency_index = actual_safety_factor / mass_kg if mass_kg > 0 else 0
 
-        pareto_solutions.append({
+        design_entry = {
             'id': i,
             'parameters': params,
             'mass': round(result.F[i, 0], 2),
@@ -334,7 +372,12 @@ def run_optimization(load=50.0, material_name='PLA', pop_size=50, n_gen=100):
             'print_time_hours': round(print_time, 2),
             'co2_kg': round(co2_kg, 4),
             'efficiency_index': round(efficiency_index, 2)
-        })
+        }
+
+        if stress_ci95_placeholder is not None:
+            design_entry['stress_ci95'] = round(stress_ci95_placeholder, 2)
+
+        pareto_solutions.append(design_entry)
 
     # Sort by mass (for display)
     pareto_solutions = sorted(pareto_solutions, key=lambda x: x['mass'])
@@ -361,7 +404,8 @@ def run_optimization(load=50.0, material_name='PLA', pop_size=50, n_gen=100):
         'n_generations': n_gen,
         'n_evaluations': pop_size * n_gen,
         'mentor_log': problem.logs,
-        'mentor_summary': mentor_summary
+        'mentor_summary': mentor_summary,
+        'stress_sigma': round(global_sigma, 4) if global_sigma is not None else None
     }
 
 

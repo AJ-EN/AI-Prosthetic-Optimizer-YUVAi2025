@@ -9,6 +9,9 @@ import os
 import json
 import sys
 import zipfile
+import hashlib
+import time
+from pathlib import Path
 from io import BytesIO
 
 # Import your modules
@@ -23,8 +26,66 @@ CORS(app)  # Allow frontend to access API
 # Configuration
 app.config['MODELS_FOLDER'] = 'data/models'
 
-# Cache for storing optimization results
+# Cache for storing optimization results in memory (for download endpoint)
 optimization_cache = {}
+
+# Disk cache directory for optimization runs
+CACHE_DIR = Path('data/cache')
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _compute_request_hash(load, material, pop_size, n_gen):
+    """Create stable hash for optimization inputs."""
+    payload = {
+        'load': round(load, 4),
+        'material': material,
+        'pop_size': pop_size,
+        'n_gen': n_gen
+    }
+    hash_input = json.dumps(payload, sort_keys=True).encode('utf-8')
+    return hashlib.sha1(hash_input).hexdigest()
+
+
+def _load_cached_results(cache_path):
+    """Load cached optimization results from disk if available."""
+    try:
+        with open(cache_path, 'r') as f:
+            cached_payload = json.load(f)
+        return cached_payload.get('results') or cached_payload
+    except Exception as exc:
+        print(f"[API] Warning: failed to load cache {cache_path}: {exc}")
+        return None
+
+
+def _ensure_design_assets(results):
+    """Make sure STL files exist and refresh in-memory cache."""
+    if not results:
+        return
+
+    for design in results.get('pareto_front', []):
+        design_id = str(design.get('id'))
+        params = design.get('parameters')
+        stl_file = design.get('stl_file')
+
+        if params:
+            stl_path = None
+            if stl_file:
+                stl_path = Path(app.config['MODELS_FOLDER']) / stl_file
+
+            if not stl_path or not stl_path.exists():
+                try:
+                    regenerated = generate_bracket_stl(
+                        params=params,
+                        output_dir=app.config['MODELS_FOLDER']
+                    )
+                    design['stl_file'] = os.path.basename(regenerated)
+                except Exception as regen_exc:
+                    print(
+                        f"[API] Warning: STL regeneration failed for design {design_id}: {regen_exc}")
+                    design['stl_file'] = None
+
+        # Refresh in-memory cache for download endpoint
+        optimization_cache[design_id] = design
 
 
 def get_design_by_id(design_id):
@@ -104,7 +165,25 @@ def optimize():
         print(
             f"[API] Optimization request: {load}N, {material}, pop={pop_size}, gen={n_gen}")
 
-        # Run optimization
+        # Check disk cache first
+        cache_key = _compute_request_hash(load, material, pop_size, n_gen)
+        cache_path = CACHE_DIR / f"{cache_key}.json"
+
+        if cache_path.exists():
+            print(f"[API] Cache hit: {cache_key}")
+            cached_results = _load_cached_results(cache_path)
+            if cached_results:
+                _ensure_design_assets(cached_results)
+                return jsonify({
+                    'success': True,
+                    'results': cached_results,
+                    'cached': True,
+                    'cache_key': cache_key
+                })
+            else:
+                print(f"[API] Cache invalid, recomputing: {cache_key}")
+
+        # Cache miss → run optimization
         results = run_optimization(
             load=load,
             material_name=material,
@@ -132,9 +211,30 @@ def optimize():
         print(
             f"[API] Optimization complete: {len(results['pareto_front'])} designs")
 
+        # Persist results to disk cache
+        cache_payload = {
+            'inputs': {
+                'load': load,
+                'material': material,
+                'pop_size': pop_size,
+                'n_gen': n_gen
+            },
+            'results': results,
+            'cached_at': time.time()
+        }
+        try:
+            with open(cache_path, 'w') as f:
+                json.dump(cache_payload, f, indent=2)
+            print(f"[API] Cache stored: {cache_key}")
+        except Exception as cache_exc:
+            print(
+                f"[API] Warning: failed to write cache {cache_key}: {cache_exc}")
+
         return jsonify({
             'success': True,
-            'results': results
+            'results': results,
+            'cached': False,
+            'cache_key': cache_key
         })
 
     except Exception as e:
