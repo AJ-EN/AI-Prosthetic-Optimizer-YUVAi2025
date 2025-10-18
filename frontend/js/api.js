@@ -12,8 +12,6 @@ async function runOptimization() {
     const popSize = parseInt(document.getElementById('pop-size').value);
     const generations = parseInt(document.getElementById('generations').value);
 
-    console.log('Starting optimization:', { load, material, popSize, generations });
-
     // Show loading state
     document.getElementById('loading-state').classList.remove('hidden');
     document.getElementById('optimize-btn').disabled = true;
@@ -36,7 +34,6 @@ async function runOptimization() {
         const data = await response.json();
 
         if (data.success) {
-            console.log('✅ Optimization complete:', data.results);
             currentResults = data.results;
 
             // Calculate stats for toast
@@ -56,7 +53,6 @@ async function runOptimization() {
             showToast('Optimization failed: ' + data.error, 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
         showToast('Failed to connect to API. Make sure Flask server is running on port 5000.', 'error');
     } finally {
         // Hide loading state
@@ -70,8 +66,6 @@ async function runOptimization() {
  * Load pre-computed demo results (fast)
  */
 async function loadDemo() {
-    console.log('Loading demo results...');
-
     document.getElementById('loading-state').classList.remove('hidden');
     document.getElementById('demo-btn').disabled = true;
 
@@ -80,7 +74,6 @@ async function loadDemo() {
         const data = await response.json();
 
         if (data.success) {
-            console.log('✅ Demo loaded:', data.results);
             currentResults = data.results;
 
             // Show info toast for demo
@@ -92,15 +85,10 @@ async function loadDemo() {
             if (data.results.mentor_log || data.results.mentor_summary) {
                 displayMentorInsights(data.results);
             }
-
-            if (data.cached) {
-                console.log('📦 Results were cached');
-            }
         } else {
             showToast('Failed to load demo: ' + data.error, 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
         showToast('Failed to connect to API. Make sure Flask server is running.', 'error');
     } finally {
         document.getElementById('loading-state').classList.add('hidden');
@@ -116,8 +104,6 @@ async function downloadManufacturingPack(evt, designId) {
         showToast('Please select a design first by clicking on a point in the Pareto chart.', 'info');
         return;
     }
-
-    console.log(`📦 Downloading manufacturing pack for design ${designId}...`);
 
     try {
         // Show loading indicator
@@ -151,8 +137,6 @@ async function downloadManufacturingPack(evt, designId) {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        console.log('✅ Manufacturing pack downloaded successfully');
-
         // Reset button
         if (button) {
             button.innerHTML = originalText ?? '📦 Download Manufacturing Pack';
@@ -167,7 +151,6 @@ async function downloadManufacturingPack(evt, designId) {
         );
 
     } catch (error) {
-        console.error('Error downloading manufacturing pack:', error);
         showToast(`Failed to download manufacturing pack: ${error.message}`, 'error');
 
         // Reset button on error
@@ -185,8 +168,6 @@ async function getMaterialAdvice() {
     const load = parseFloat(document.getElementById('advisor-load').value);
     const environment = document.getElementById('advisor-environment').value;
     const budget = document.getElementById('advisor-budget').value;
-
-    console.log('Getting material advice:', { load, environment, budget });
 
     // Show loading
     document.getElementById('advisor-loading').classList.remove('hidden');
@@ -208,14 +189,12 @@ async function getMaterialAdvice() {
         const data = await response.json();
 
         if (data.success) {
-            console.log('✅ Material recommendation received:', data.recommendation);
             currentRecommendation = data.recommendation;
             displayMaterialRecommendation(data.recommendation);
         } else {
             showToast('Failed to get recommendation: ' + data.error, 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
         showToast('Failed to connect to material advisor API.', 'error');
     } finally {
         document.getElementById('advisor-loading').classList.add('hidden');

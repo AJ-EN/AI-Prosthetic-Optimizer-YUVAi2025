@@ -1,0 +1,13 @@
+{
+  "name": "ai-prosthetic-optimizer-frontend",
+  "version": "1.0.0",
+  "description": "AI Prosthetic Optimizer Frontend - YUVAi 2025",
+  "scripts": {
+    "build:css": "tailwindcss -i ./css/input.css -o ./css/output.css --minify",
+    "watch:css": "tailwindcss -i ./css/input.css -o ./css/output.css --watch",
+    "dev": "npm run watch:css"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

@@ -5,509 +5,701 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Prosthetic Optimizer | YUVAi 2025</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Chart.js for Pareto front -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.js"></script>
 
     <!-- External CSS -->
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/output.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/animations.css" />
   </head>
 
-  <body class="p-4">
-    <!-- Header -->1
-    <div class="max-w-7xl mx-auto mb-6">
-      <div class="bg-white rounded-lg shadow-xl p-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">
-          🤖 AI Prosthetic Optimizer
-        </h1>
-        <p class="text-gray-600">
-          Multi-objective design optimization using NSGA-II + ML surrogates |
-          YUVAi Global Youth Challenge 2025
-        </p>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-  <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Left Panel: Controls -->
-      <div class="bg-white rounded-lg shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Design Parameters</h2>
-
-        <div class="space-y-4">
-          <!-- Load Input -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Applied Load (Newtons)
-            </label>
-            <input
-              type="number"
-              id="load-input"
-              value="50"
-              min="10"
-              max="200"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Force applied to prosthetic bracket
-            </p>
-          </div>
-
-          <!-- Material Selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Material
-            </label>
-            <select
-              id="material-select"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+  <body class="min-h-screen px-6 py-6 bg-white text-black">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <!-- Hero -->
+      <header class="glass-panel glow-grid relative overflow-hidden">
+        <div
+          class="absolute inset-0 bg-gradient-to-r from-gray-50 via-white to-gray-50"
+        ></div>
+        <div
+          class="relative z-10 flex flex-col gap-6 p-8 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="space-y-4 max-w-3xl">
+            <div class="badge heading-font tracking-[0.32em]">
+              AI-DRIVEN ENGINEERING
+            </div>
+            <h1
+              class="heading-font text-4xl md:text-5xl font-semibold text-black"
             >
-              <option value="PLA">PLA (3D Printing) - ₹25/kg</option>
-              <option value="Aluminum6061">Aluminum 6061-T6 - ₹350/kg</option>
-              <option value="Steel1045">Steel 1045 - ₹80/kg</option>
-            </select>
+              🤖 AI Prosthetic Optimizer
+            </h1>
+            <p class="text-gray-700 text-base md:text-lg leading-relaxed">
+              Multi-objective design exploration powered by NSGA-II, ensemble ML
+              surrogates, and real-time manufacturability intelligence. Crafted
+              for innovators building the next generation of human-centered
+              prosthetics.
+            </p>
+            <div class="flex flex-wrap gap-3 text-sm text-gray-700">
+              <span class="metric-chip"
+                ><span class="mono-accent text-black">⚙ NSGA-II</span> 50
+                generations</span
+              >
+              <span class="metric-chip"
+                ><span class="mono-accent text-black">📦</span> Full
+                manufacturing pack</span
+              >
+              <span class="metric-chip"
+                ><span class="mono-accent text-black">🧠</span> Material
+                intelligence</span
+              >
+            </div>
           </div>
-
-          <!-- Optimization Settings -->
-          <div class="bg-gray-50 p-4 rounded-lg">
-            <h3 class="font-semibold text-gray-700 mb-2">Advanced Settings</h3>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs text-gray-600 mb-1"
-                  >Population Size</label
+          <div
+            class="glass-panel--subtle p-6 rounded-2xl flex flex-col gap-4 w-full md:w-auto md:min-w-[240px]"
+          >
+            <div class="text-sm uppercase tracking-[0.3em] text-gray-600">
+              System Status
+            </div>
+            <div id="system-status" class="space-y-3 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600">API</span>
+                <span
+                  id="status-api"
+                  class="inline-flex items-center gap-2 text-black"
                 >
-                <input
-                  type="number"
-                  id="pop-size"
-                  value="40"
-                  min="20"
-                  max="100"
-                  class="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                />
+                  <span
+                    class="inline-block w-2 h-2 rounded-full bg-black animate-pulse"
+                  ></span>
+                  Online
+                </span>
               </div>
-              <div>
-                <label class="block text-xs text-gray-600 mb-1"
-                  >Generations</label
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600">Models</span>
+                <span
+                  id="status-models"
+                  class="inline-flex items-center gap-2 text-black"
                 >
-                <input
-                  type="number"
-                  id="generations"
-                  value="50"
-                  min="20"
-                  max="200"
-                  class="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                />
+                  <span
+                    class="inline-block w-2 h-2 rounded-full bg-black"
+                  ></span>
+                  Ensembles Ready
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600">Cache</span>
+                <span
+                  id="status-cache"
+                  class="inline-flex items-center gap-2 text-gray-700"
+                >
+                  <span
+                    class="inline-block w-2 h-2 rounded-full bg-gray-400"
+                  ></span>
+                  Warming
+                </span>
               </div>
             </div>
-
-            <p class="text-xs text-gray-500 mt-2">
-              Higher values = better results but slower (est. 2-4 minutes)
-            </p>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="space-y-2">
             <button
-              id="optimize-btn"
               onclick="runOptimization()"
-              class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
+              class="btn btn-primary heading-font text-base"
             >
               🚀 Run Optimization
             </button>
-
-            <button
-              id="demo-btn"
-              onclick="loadDemo()"
-              class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-semibold"
-            >
-              ⚡ Load Demo Results (Instant)
-            </button>
-
-            <button
-              id="advisor-btn"
-              onclick="openMaterialAdvisor()"
-              class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
-            >
-              🧠 Smart Material Advisor
-            </button>
           </div>
         </div>
+      </header>
 
-        <!-- Loading State -->
-        <div id="loading-state" class="hidden mt-6">
-          <!-- NSGA-II Animation -->
-          <div id="nsga-animation" class="mb-4">
-            <div class="pareto-front-line"></div>
-            <!-- Evolving dots -->
-            <div class="evolving-dot" style="top: 80%; left: 70%;"></div>
-            <div class="evolving-dot" style="top: 75%; left: 65%;"></div>
-            <div class="evolving-dot" style="top: 85%; left: 75%;"></div>
-            <div class="evolving-dot" style="top: 70%; left: 60%;"></div>
-            <div class="evolving-dot" style="top: 90%; left: 80%;"></div>
-            <div class="evolving-dot" style="top: 65%; left: 55%;"></div>
-            <div class="evolving-dot" style="top: 80%; left: 70%;"></div>
-            <div class="evolving-dot" style="top: 75%; left: 65%;"></div>
-            <div class="evolving-dot" style="top: 85%; left: 75%;"></div>
-            <div class="evolving-dot" style="top: 70%; left: 60%;"></div>
+      <!-- Main Content -->
+      <div
+        class="grid gap-6 xl:grid-cols-[minmax(320px,420px)_1fr] xl:items-start"
+      >
+        <!-- Left Panel: Controls -->
+        <aside class="glass-panel--subtle p-6 lg:sticky lg:top-8 space-y-6">
+          <div>
+            <h2 class="heading-font text-2xl font-semibold text-black mb-2">
+              Design Parameters
+            </h2>
+            <p class="text-sm text-gray-600 leading-relaxed">
+              Dial in load cases and material choices to guide the
+              multi-objective search. Inputs feed directly into the physics
+              engine and surrogate ensembles.
+            </p>
           </div>
-          
-          <div class="text-center">
-            <p class="text-gray-700 font-semibold text-lg mb-1">🧬 Evolving better designs…</p>
-            <p class="text-sm text-gray-500">NSGA-II exploring design space</p>
-            <p class="text-xs text-gray-400 mt-2">This may take 2-4 minutes</p>
-          </div>
-        </div>
-      </div>
 
-      <!-- Right Panel: Results -->
-      <div class="bg-white rounded-lg shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Pareto Front</h2>
-
-        <div id="results-container" class="hidden">
-          <!-- Chart -->
-          <div class="mb-4" style="position: relative; height: 300px;">
-            <canvas id="pareto-chart"></canvas>
-
-            <!-- Comparison Mode Controls -->
-            <div
-              class="mt-3 flex items-center justify-between bg-purple-50 p-3 rounded-lg border border-purple-200"
-            >
-              <div class="text-xs text-gray-700">
-                <span class="font-semibold">💡 Tip:</span> Shift+Click on chart
-                points or use Compare Mode to select 2 designs
-              </div>
-              <button
-                id="compare-btn"
-                onclick="toggleComparisonMode()"
-                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold text-sm"
+          <div class="space-y-5">
+            <!-- Load Input -->
+            <div class="space-y-2">
+              <label class="text-xs uppercase tracking-[0.28em] text-gray-600"
+                >Applied Load (N)</label
               >
-                🔍 Compare Designs
-              </button>
+              <input
+                type="number"
+                id="load-input"
+                value="50"
+                min="10"
+                max="200"
+                class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300"
+              />
+              <p class="text-xs text-gray-500">
+                Force applied to the prosthetic bracket in Newtons.
+              </p>
             </div>
-          </div>
 
-          <!-- Comparison Card -->
-          <div
-            id="comparison-card"
-            class="hidden mb-4 bg-gradient-to-r from-green-50 to-amber-50 rounded-lg border-2 border-purple-300 p-4"
-          >
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-gray-800 flex items-center">
-                <span class="text-xl mr-2">⚖️</span>
-                Design Comparison
-              </h3>
-              <button
-                onclick="clearComparison()"
-                class="text-xs text-gray-600 hover:text-red-600 font-semibold"
+            <!-- Material Selection -->
+            <div class="space-y-2">
+              <label class="text-xs uppercase tracking-[0.28em] text-gray-600"
+                >Material</label
               >
-                ✕ Clear
-              </button>
-            </div>
-            <div id="comparison-content">
-              <!-- Populated dynamically -->
-            </div>
-          </div>
-
-          <!-- Selected Design Info -->
-          <div id="design-info" class="bg-blue-50 p-4 rounded-lg">
-            <h3 class="font-semibold text-gray-800 mb-2">Selected Design</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm mb-3">
-              <div class="bg-white p-2 rounded">
-                <span class="text-gray-600">Mass:</span>
-                <span class="font-bold text-blue-600" id="info-mass">-</span> g
-              </div>
-              <div class="bg-white p-2 rounded">
-                <span class="text-gray-600">Cost:</span>
-                <span class="font-bold text-green-600"
-                  >₹<span id="info-cost">-</span></span
-                >
-              </div>
-              <div class="bg-white p-2 rounded">
-                <span class="text-gray-600">Design:</span>
-                <span class="font-bold text-purple-600" id="info-id">-</span>
-              </div>
+              <select
+                id="material-select"
+                class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300"
+              >
+                <option class="bg-black text-black" value="PLA">
+                  PLA (3D Printing) - ₹25/kg
+                </option>
+                <option class="bg-black text-black" value="Aluminum6061">
+                  Aluminum 6061-T6 - ₹350/kg
+                </option>
+                <option class="bg-black text-black" value="Steel1045">
+                  Steel 1045 - ₹80/kg
+                </option>
+              </select>
             </div>
 
-            <!-- Print Readiness Score -->
-            <div
-              class="bg-white p-3 rounded-lg border-2"
-              id="readiness-container"
-            >
+            <!-- Optimization Settings -->
+            <div class="surface-tile space-y-4">
               <div class="flex items-center justify-between">
-                <span class="text-sm font-semibold text-gray-700"
-                  >🏭 Print Readiness:</span
+                <h3 class="text-sm font-semibold text-black">
+                  Advanced Settings
+                </h3>
+                <span class="mono-accent text-xs text-gray-600"
+                  >NSGA-II kernel</span
                 >
-                <div class="flex items-center space-x-2">
-                  <span id="readiness-score" class="text-2xl font-bold">-</span>
-                  <span class="text-gray-500">/100</span>
+              </div>
+
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="space-y-2">
+                  <label
+                    class="text-[11px] uppercase tracking-[0.3em] text-gray-600"
+                    >Population Size</label
+                  >
+                  <input
+                    type="number"
+                    id="pop-size"
+                    value="40"
+                    min="20"
+                    max="100"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <label
+                    class="text-[11px] uppercase tracking-[0.3em] text-gray-600"
+                    >Generations</label
+                  >
+                  <input
+                    type="number"
+                    id="generations"
+                    value="50"
+                    min="20"
+                    max="200"
+                    class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  />
                 </div>
               </div>
-              <div class="mt-1 text-xs text-gray-500">
-                <span id="readiness-time">Print time: ~-h</span>
+
+              <div
+                class="flex items-center justify-between text-xs text-gray-600"
+              >
+                <span>Higher values improve Pareto precision.</span>
+                <span class="mono-accent text-gray-700">⏱ ~2-4 min</span>
               </div>
             </div>
 
-            <!-- Sustainability Meter -->
-            <div
-              class="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg border-2 border-green-200 mt-3"
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+              <button
+                id="optimize-btn"
+                onclick="runOptimization()"
+                class="btn btn-primary w-full heading-font text-base"
+              >
+                🚀 Run Optimization
+              </button>
+
+              <button
+                id="demo-btn"
+                onclick="loadDemo()"
+                class="btn btn-secondary w-full text-base"
+              >
+                ⚡ Load Demo Results (Instant)
+              </button>
+
+              <button
+                id="advisor-btn"
+                onclick="openMaterialAdvisor()"
+                class="btn btn-ghost w-full text-base"
+              >
+                🧠 Smart Material Advisor
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div
+            id="loading-state"
+            class="hidden space-y-4 border border-gray-600 rounded-xl p-4 bg-gray-50"
+          >
+            <!-- NSGA-II Animation -->
+            <div id="nsga-animation" class="mb-3">
+              <div class="pareto-front-line"></div>
+              <!-- Evolving dots -->
+              <div class="evolving-dot" style="top: 80%; left: 70%"></div>
+              <div class="evolving-dot" style="top: 75%; left: 65%"></div>
+              <div class="evolving-dot" style="top: 85%; left: 75%"></div>
+              <div class="evolving-dot" style="top: 70%; left: 60%"></div>
+              <div class="evolving-dot" style="top: 90%; left: 80%"></div>
+              <div class="evolving-dot" style="top: 65%; left: 55%"></div>
+              <div class="evolving-dot" style="top: 80%; left: 70%"></div>
+              <div class="evolving-dot" style="top: 75%; left: 65%"></div>
+              <div class="evolving-dot" style="top: 85%; left: 75%"></div>
+              <div class="evolving-dot" style="top: 70%; left: 60%"></div>
+            </div>
+
+            <div class="text-center space-y-1">
+              <p class="heading-font text-lg text-black">
+                🧬 Evolving better designs…
+              </p>
+              <p class="text-sm text-gray-700">NSGA-II exploring trade space</p>
+              <p class="text-xs text-gray-500">
+                Live progress updates stream below
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right Panel: Results -->
+        <section class="glass-panel--subtle p-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <h2 class="heading-font text-2xl font-semibold text-black">
+              Pareto Workspace
+            </h2>
+            <button
+              id="compare-btn"
+              onclick="toggleComparisonMode()"
+              class="btn btn-ghost text-sm hidden"
             >
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-semibold text-gray-700"
-                  >🍃 Sustainability</span
+              🔍 Compare Designs
+            </button>
+          </div>
+
+          <div id="results-container" class="hidden space-y-5">
+            <!-- Chart -->
+            <div
+              class="relative rounded-2xl border border-gray-300 bg-white px-4 pb-4 pt-6"
+            >
+              <div
+                class="absolute -top-3 left-6 px-3 py-1 rounded-full bg-white border border-gray-300 text-[11px] uppercase tracking-[0.32em] text-gray-600"
+              >
+                Mass vs Cost
+              </div>
+              <div style="position: relative; height: 300px">
+                <canvas id="pareto-chart"></canvas>
+              </div>
+              <div
+                class="mt-4 flex flex-col gap-2 text-xs text-gray-600 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <span
+                  ><span class="text-black font-semibold">Tip:</span>
+                  Shift+Click points to pin designs for comparison.</span
                 >
+                <button
+                  id="compare-btn-inline"
+                  onclick="toggleComparisonMode()"
+                  class="btn btn-ghost text-xs"
+                >
+                  🔍 Toggle Compare Mode
+                </button>
               </div>
+            </div>
 
-              <!-- CO2 Emissions -->
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs text-gray-600">CO₂ Emissions:</span>
-                <span class="text-sm font-bold text-gray-800">
-                  <span id="co2-value">-</span> kg
-                </span>
+            <!-- Comparison Card -->
+            <div
+              id="comparison-card"
+              class="hidden rounded-2xl border border-gray-300/60 bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-sky-500/10 p-5"
+            >
+              <div class="flex items-center justify-between mb-3">
+                <h3
+                  class="heading-font text-lg text-black flex items-center gap-3"
+                >
+                  <span class="text-xl">⚖️</span>
+                  Design Comparison
+                </h3>
+                <button
+                  onclick="clearComparison()"
+                  class="text-xs uppercase tracking-[0.3em] text-gray-600 hover:text-rose-300"
+                >
+                  Clear
+                </button>
               </div>
+              <div id="comparison-content" class="text-sm text-black">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
 
-              <!-- Efficiency Index -->
-              <div class="mt-2">
-                <div class="flex items-center justify-between text-xs mb-1">
-                  <span class="text-gray-600">Efficiency Index:</span>
-                  <span class="font-bold text-green-700" id="efficiency-value"
-                    >-</span
+            <!-- Selected Design Info -->
+            <div
+              id="design-info"
+              class="rounded-2xl border border-gray-300/60 bg-white/50 p-5 space-y-4"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="heading-font text-lg text-black">Selected Design</h3>
+                <div class="flex flex-wrap gap-2 text-xs text-gray-600">
+                  <span class="metric-chip"
+                    ><span class="mono-accent text-black">ID</span>
+                    <span id="info-id">-</span></span
+                  >
+                  <span id="readiness-chip" class="metric-chip"
+                    ><span class="mono-accent text-lime-300">Ready</span>
+                    <span id="readiness-score" class="mono-accent text-black"
+                      >-</span
+                    >/100</span
                   >
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    id="efficiency-bar"
-                    class="bg-gradient-to-r from-green-400 to-emerald-600 h-2 rounded-full transition-all duration-500"
-                    style="width: 0%"
-                  ></div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
+                <div class="surface-tile">
+                  <span class="block text-xs text-gray-600">Mass</span>
+                  <span class="heading-font text-xl text-cyan-200"
+                    ><span id="info-mass">-</span> g</span
+                  >
                 </div>
-                <div class="text-xs text-gray-500 mt-1 text-center">
-                  Safety Factor / kg (higher is better)
+                <div class="surface-tile">
+                  <span class="block text-xs text-gray-600">Cost</span>
+                  <span class="heading-font text-xl text-emerald-200"
+                    >₹<span id="info-cost">-</span></span
+                  >
+                </div>
+                <div class="surface-tile">
+                  <span class="block text-xs text-gray-600">Print Time</span>
+                  <span
+                    class="heading-font text-xl text-indigo-200"
+                    id="readiness-time"
+                    >Print time: ~-h</span
+                  >
                 </div>
               </div>
-            </div>
 
-            <!-- Parameters -->
-            <div class="mt-3 text-xs">
-              <details class="cursor-pointer">
-                <summary class="font-semibold text-gray-700">
+              <!-- Sustainability Meter -->
+              <div class="space-y-3">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-700 font-medium"
+                    >🍃 Sustainability</span
+                  >
+                  <span class="mono-accent text-xs text-gray-500"
+                    >kg CO₂ & efficiency</span
+                  >
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3 text-sm">
+                  <div class="surface-tile">
+                    <span
+                      class="block text-[11px] uppercase tracking-[0.3em] text-gray-500"
+                      >CO₂</span
+                    >
+                    <span class="heading-font text-lg text-black"
+                      ><span id="co2-value">-</span> kg</span
+                    >
+                  </div>
+                  <div class="surface-tile">
+                    <span
+                      class="block text-[11px] uppercase tracking-[0.3em] text-gray-500"
+                      >Efficiency</span
+                    >
+                    <span
+                      class="heading-font text-lg text-emerald-200"
+                      id="efficiency-value"
+                      >-</span
+                    >
+                  </div>
+                  <div class="surface-tile">
+                    <span
+                      class="block text-[11px] uppercase tracking-[0.3em] text-gray-500"
+                      >Carbon Intensity</span
+                    >
+                    <div class="w-full bg-gray-100/70 rounded-full h-2 mt-2">
+                      <div
+                        id="efficiency-bar"
+                        class="bg-gradient-to-r from-emerald-400 via-cyan-400 to-sky-500 h-2 rounded-full transition-all duration-500"
+                        style="width: 0%"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Parameters -->
+              <details
+                class="rounded-xl border border-gray-300/50 bg-white/60 px-4 py-3 text-xs text-gray-700"
+              >
+                <summary class="cursor-pointer text-black font-semibold">
                   Design Parameters
                 </summary>
-                <div id="info-params" class="mt-2 space-y-1 text-gray-600">
+                <div id="info-params" class="mt-3 space-y-1 text-gray-600">
                   <!-- Populated dynamically -->
                 </div>
               </details>
+
+              <!-- Download Button -->
+              <button
+                onclick="downloadManufacturingPack(event, currentDesignId)"
+                class="btn btn-positive w-full heading-font"
+              >
+                📦 Download Manufacturing Pack
+              </button>
             </div>
 
-            <!-- Download Button -->
-            <button
-              onclick="downloadManufacturingPack(event, currentDesignId)"
-              class="mt-3 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow-md"
-            >
-              📦 Download Manufacturing Pack
-            </button>
-          </div>
-
-          <!-- Designs Table -->
-          <div class="mt-4">
-            <h3 class="font-semibold text-gray-700 mb-2">All Designs</h3>
-            <div class="overflow-x-auto">
-              <table id="designs-table" class="min-w-full text-xs">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th
-                      class="px-2 py-2 text-left cursor-pointer hover:bg-gray-100"
-                      onclick="sortTable('id')"
+            <!-- Designs Table -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-black">All Designs</h3>
+                <span class="mono-accent text-xs text-gray-500"
+                  >Sorted by Pareto rank</span
+                >
+              </div>
+              <div class="overflow-x-auto">
+                <table
+                  id="designs-table"
+                  class="min-w-full text-xs text-left text-black"
+                >
+                  <thead>
+                    <tr
+                      class="text-gray-600 text-[11px] uppercase tracking-[0.32em]"
                     >
-                      ID
-                    </th>
-                    <th
-                      class="px-2 py-2 text-left cursor-pointer hover:bg-gray-100"
-                      onclick="sortTable('mass')"
-                    >
-                      Mass(g)
-                    </th>
-                    <th
-                      class="px-2 py-2 text-left cursor-pointer hover:bg-gray-100"
-                      onclick="sortTable('cost')"
-                    >
-                      Cost(₹)
-                    </th>
-                    <th
-                      class="px-2 py-2 text-left cursor-pointer hover:bg-gray-100"
-                      onclick="sortTable('print_score')"
-                    >
-                      Readiness
-                    </th>
-                    <th
-                      class="px-2 py-2 text-left cursor-pointer hover:bg-gray-100"
-                      onclick="sortTable('co2_kg')"
-                      title="Carbon dioxide emissions"
-                    >
-                      🍃 CO₂(kg)
-                    </th>
-                    <th
-                      class="px-2 py-2 text-left cursor-pointer hover:bg-gray-100"
-                      onclick="sortTable('efficiency_index')"
-                      title="Safety factor per kg"
-                    >
-                      ⚡ Efficiency
-                    </th>
-                  </tr>
-                </thead>
-                <tbody id="designs-table-body" class="divide-y">
-                  <!-- Populated dynamically -->
-                </tbody>
-              </table>
+                      <th
+                        class="px-3 py-3 cursor-pointer"
+                        onclick="sortTable('id')"
+                      >
+                        ID
+                      </th>
+                      <th
+                        class="px-3 py-3 cursor-pointer"
+                        onclick="sortTable('mass')"
+                      >
+                        Mass (g)
+                      </th>
+                      <th
+                        class="px-3 py-3 cursor-pointer"
+                        onclick="sortTable('cost')"
+                      >
+                        Cost (₹)
+                      </th>
+                      <th
+                        class="px-3 py-3 cursor-pointer"
+                        onclick="sortTable('print_score')"
+                      >
+                        Readiness
+                      </th>
+                      <th
+                        class="px-3 py-3 cursor-pointer"
+                        onclick="sortTable('co2_kg')"
+                        title="Carbon dioxide emissions"
+                      >
+                        CO₂ (kg)
+                      </th>
+                      <th
+                        class="px-3 py-3 cursor-pointer"
+                        onclick="sortTable('efficiency_index')"
+                        title="Safety factor per kg"
+                      >
+                        Efficiency
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="designs-table-body"
+                    class="divide-y divide-slate-800/70"
+                  >
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div id="no-results" class="text-center py-12 text-gray-400">
-          <svg
-            class="w-16 h-16 mx-auto mb-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+          <div
+            id="no-results"
+            class="text-center py-16 text-gray-500 border border-dashed border-gray-300/70 rounded-2xl"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-            ></path>
-          </svg>
-          <p class="font-semibold">No results yet</p>
-          <p class="text-sm">
-            Run optimization or load demo to see Pareto front
-          </p>
-        </div>
+            <svg
+              class="w-16 h-16 mx-auto mb-4 text-slate-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              ></path>
+            </svg>
+            <p class="heading-font text-lg text-black">No results yet</p>
+            <p class="text-sm text-gray-600">
+              Run optimization or load the demo set to visualize the Pareto
+              front.
+            </p>
+          </div>
+        </section>
       </div>
-    </div>
 
-    <!-- 3D Viewer Section -->
-    <div class="max-w-7xl mx-auto mt-6">
-      <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+      <!-- 3D Viewer Section -->
+      <section class="glass-panel--subtle overflow-hidden">
         <button
           onclick="toggle3DViewer()"
-          class="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition"
+          class="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-gray-50 transition"
         >
-          <h2 class="text-2xl font-bold text-gray-800">
-            🎨 3D Model Viewer
-          </h2>
-          <span id="viewer-toggle-icon" class="text-2xl">▼</span>
+          <div class="space-y-1">
+            <h2 class="heading-font text-2xl text-black">🎨 3D Model Viewer</h2>
+            <p class="text-sm text-gray-600">
+              Inspect geometry fidelity and stress distribution directly
+              in-browser.
+            </p>
+          </div>
+          <span id="viewer-toggle-icon" class="text-2xl text-gray-600">▼</span>
         </button>
-        <div id="viewer-section" class="hidden">
+        <div
+          id="viewer-section"
+          class="hidden border-t border-gray-200 bg-white"
+        >
           <div class="p-6">
             <div id="viewer-container"></div>
-            <p class="text-sm text-gray-500 mt-2 text-center">
-              Click a point on the Pareto chart to view the 3D model
+            <p class="text-xs text-gray-600 mt-3 text-center">
+              Select a design from the Pareto chart to stream the corresponding
+              STL into the viewer.
             </p>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- AI Mentor Panel -->
-    <div class="max-w-7xl mx-auto mt-6">
-      <div
-        class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-xl border-2 border-purple-200 overflow-hidden"
-      >
+      <!-- AI Mentor Panel -->
+      <section class="glass-panel--subtle overflow-hidden">
         <button
           onclick="toggleMentor()"
-          class="w-full p-4 flex items-center justify-between hover:bg-purple-100 transition"
+          class="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-gray-50 transition"
         >
-          <div class="flex items-center">
-            <span class="text-3xl mr-3">🎓</span>
-            <h2 class="text-2xl font-bold text-gray-800">
-              AI Mentor - Optimization Insights
+          <div class="space-y-1">
+            <h2
+              class="heading-font text-2xl text-black flex items-center gap-3"
+            >
+              <span class="text-3xl">🎓</span>
+              AI Mentor · Optimization Insights
             </h2>
+            <p class="text-sm text-gray-600">
+              Monitor NSGA-II evolution and receive engineering recommendations
+              in real time.
+            </p>
           </div>
-          <span id="mentor-toggle-icon" class="text-2xl">▼</span>
+          <span id="mentor-toggle-icon" class="text-2xl text-gray-600">▼</span>
         </button>
 
-        <div id="mentor-section" class="hidden p-6">
-          <div id="mentor-container" class="hidden">
+        <div
+          id="mentor-section"
+          class="hidden border-t border-gray-200/60 bg-black/40 p-6"
+        >
+          <div id="mentor-container" class="hidden space-y-6">
             <!-- Generation Log -->
-            <div class="mb-4">
-              <h3 class="font-semibold text-gray-700 mb-2 flex items-center">
-                <span class="text-xl mr-2">📊</span>
+            <div class="space-y-3">
+              <h3
+                class="text-sm font-semibold text-black flex items-center gap-2"
+              >
+                <span class="text-xl">📊</span>
                 Generation Progress
               </h3>
               <div
                 id="mentor-log"
-                class="bg-white rounded-lg p-4 max-h-64 overflow-y-auto space-y-2 border border-purple-200"
+                class="surface-tile bg-black/60 border border-gray-200/80 rounded-2xl max-h-64 overflow-y-auto space-y-2 text-xs text-gray-700"
               >
                 <!-- Populated dynamically -->
               </div>
             </div>
 
             <!-- Summary Insights -->
-            <div>
-              <h3 class="font-semibold text-gray-700 mb-2 flex items-center">
-                <span class="text-xl mr-2">💡</span>
+            <div class="space-y-3">
+              <h3
+                class="text-sm font-semibold text-black flex items-center gap-2"
+              >
+                <span class="text-xl">💡</span>
                 Key Insights & Recommendations
               </h3>
               <div
                 id="mentor-summary"
-                class="bg-white rounded-lg p-4 border border-purple-200 whitespace-pre-line text-sm leading-relaxed"
+                class="surface-tile bg-white border border-gray-300 rounded-2xl whitespace-pre-line text-sm leading-relaxed text-black"
               >
                 <!-- Populated dynamically -->
               </div>
             </div>
           </div>
 
-          <div id="mentor-placeholder" class="text-center py-8 text-gray-400">
-          <svg
-            class="w-16 h-16 mx-auto mb-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-            ></path>
-          </svg>
-          <p class="font-semibold">AI Mentor Ready</p>
-          <p class="text-sm">
-            Run optimization to see intelligent insights and recommendations
-          </p>
+          <div id="mentor-placeholder" class="text-center py-10 text-gray-500">
+            <svg
+              class="w-16 h-16 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              ></path>
+            </svg>
+            <p class="heading-font text-base text-black">AI Mentor Ready</p>
+            <p class="text-sm text-gray-600">
+              Run optimization to unlock generation logs and actionable
+              insights.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
 
     <!-- Material Advisor Modal -->
     <div
       id="advisor-modal"
-      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 items-center justify-center p-4"
+      style="display: none"
       onclick="closeModalOnBackdrop(event)"
     >
       <div
-        class="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+        class="glass-panel glow-grid relative w-full max-w-3xl max-h-[90vh] overflow-y-auto"
         onclick="event.stopPropagation()"
       >
         <!-- Modal Header -->
-        <div
-          class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-t-lg"
-        >
+        <div class="relative z-10 border-b border-gray-200 bg-white px-8 py-6">
           <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <span class="text-4xl mr-3">🧠</span>
+            <div class="flex items-center gap-4">
+              <span class="text-4xl">🧠</span>
               <div>
-                <h2 class="text-2xl font-bold">Smart Material Advisor</h2>
-                <p class="text-purple-100 text-sm">
-                  AI-powered material selection guidance
+                <h2 class="heading-font text-2xl text-black">
+                  Smart Material Advisor
+                </h2>
+                <p class="text-sm text-gray-600">
+                  AI-powered material selection guidance tuned to prosthetic
+                  performance.
                 </p>
               </div>
             </div>
             <button
               onclick="closeMaterialAdvisor()"
-              class="text-white hover:text-gray-200 text-3xl font-light leading-none"
+              class="text-gray-600 hover:text-black text-3xl leading-none"
             >
               ×
             </button>
@@ -515,17 +707,24 @@
         </div>
 
         <!-- Modal Body -->
-        <div class="p-6">
+        <div class="relative z-10 px-8 py-6 space-y-6">
           <!-- Input Form -->
-          <div class="mb-6 bg-gray-50 p-4 rounded-lg">
-            <h3 class="font-semibold text-gray-800 mb-4">
-              Tell us about your application
-            </h3>
+          <div
+            class="surface-tile bg-white border border-gray-300 rounded-2xl p-5 space-y-4"
+          >
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-black">
+                Tell us about your application
+              </h3>
+              <span class="mono-accent text-xs text-gray-600"
+                >Constraints → Recommendation</span
+              >
+            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <!-- Load Input -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+              <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.28em] text-gray-500"
                   >Applied Load (N)</label
                 >
                 <input
@@ -534,89 +733,108 @@
                   value="100"
                   min="1"
                   max="1000"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  class="w-full rounded-xl border border-gray-300/70 bg-black/80 px-4 py-3 text-sm text-black focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 />
               </div>
 
               <!-- Environment Selection -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+              <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.28em] text-gray-500"
                   >Environment</label
                 >
                 <select
                   id="advisor-environment"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  class="w-full rounded-xl border border-gray-300/70 bg-black/80 px-4 py-3 text-sm text-black focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
-                  <option value="general">General Use</option>
-                  <option value="medical">Medical/Healthcare</option>
-                  <option value="industrial">Industrial</option>
-                  <option value="outdoor">Outdoor</option>
+                  <option class="bg-white text-black" value="general">
+                    General Use
+                  </option>
+                  <option class="bg-white text-black" value="medical">
+                    Medical/Healthcare
+                  </option>
+                  <option class="bg-white text-black" value="industrial">
+                    Industrial
+                  </option>
+                  <option class="bg-white text-black" value="outdoor">
+                    Outdoor
+                  </option>
                 </select>
               </div>
 
               <!-- Budget Selection -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2"
+              <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.28em] text-gray-500"
                   >Budget</label
                 >
                 <select
                   id="advisor-budget"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  class="w-full rounded-xl border border-gray-300/70 bg-black/80 px-4 py-3 text-sm text-black focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
                 >
-                  <option value="low">Low (Cost-effective)</option>
-                  <option value="medium" selected>Medium (Balanced)</option>
-                  <option value="high">High (Premium)</option>
+                  <option class="bg-white text-black" value="low">
+                    Low (Cost-effective)
+                  </option>
+                  <option class="bg-white text-black" value="medium" selected>
+                    Medium (Balanced)
+                  </option>
+                  <option class="bg-white text-black" value="high">
+                    High (Premium)
+                  </option>
                 </select>
               </div>
             </div>
 
             <button
               onclick="getMaterialAdvice()"
-              class="mt-4 w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
+              class="btn btn-primary w-full heading-font text-base"
             >
               🔍 Get Recommendation
             </button>
           </div>
 
           <!-- Loading State -->
-          <div id="advisor-loading" class="hidden text-center py-8">
+          <div
+            id="advisor-loading"
+            class="hidden text-center py-10 border border-dashed border-gray-300/60 rounded-2xl bg-black/40"
+          >
             <div class="loading-spinner mx-auto"></div>
-            <p class="text-gray-600 mt-2">Analyzing requirements...</p>
+            <p class="text-gray-600 mt-3">Analyzing requirements...</p>
           </div>
 
           <!-- Recommendation Results -->
-          <div id="advisor-results" class="hidden">
+          <div id="advisor-results" class="hidden space-y-5">
             <!-- Recommended Material -->
             <div
-              class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-6 mb-4"
+              class="rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 to-sky-500/10 p-6"
             >
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="text-xl font-bold text-gray-800 mb-2">
+              <div
+                class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
+              >
+                <div class="space-y-2">
+                  <h3 class="heading-font text-xl text-emerald-200">
                     ✅ Recommended Material
                   </h3>
                   <p
                     id="recommended-material"
-                    class="text-3xl font-bold text-green-700"
+                    class="text-3xl font-bold text-emerald-200"
                   >
                     -
                   </p>
-                  <p class="text-sm text-gray-600 mt-1">
-                    <span class="font-semibold">Manufacturing:</span>
+                  <p class="text-sm text-gray-700">
+                    <span class="font-semibold text-black">Manufacturing:</span>
                     <span id="manufacturing-method">-</span>
                   </p>
                 </div>
-                <div class="text-right text-sm text-gray-600">
+                <div class="space-y-2 text-sm text-black">
                   <div>
-                    <span class="font-semibold">Cost:</span>
+                    <span class="text-gray-600">Cost:</span>
                     ₹<span id="material-cost">-</span>/kg
                   </div>
                   <div>
-                    <span class="font-semibold">Strength:</span>
+                    <span class="text-gray-600">Strength:</span>
                     <span id="material-strength">-</span> MPa
                   </div>
                   <div>
-                    <span class="font-semibold">CO₂:</span>
+                    <span class="text-gray-600">CO₂:</span>
                     <span id="material-co2">-</span> kg/kg
                   </div>
                 </div>
@@ -624,37 +842,43 @@
             </div>
 
             <!-- Rationale -->
-            <div class="mb-4">
-              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
-                <span class="text-xl mr-2">💡</span>
+            <div class="space-y-2">
+              <h4
+                class="text-sm font-semibold text-black flex items-center gap-2"
+              >
+                <span class="text-xl">💡</span>
                 Why this material?
               </h4>
               <ul
                 id="rationale-list"
-                class="space-y-2 bg-blue-50 p-4 rounded-lg"
+                class="space-y-2 surface-tile bg-black/60 border border-gray-200/80 rounded-2xl p-4 text-sm text-gray-700"
               >
                 <!-- Populated dynamically -->
               </ul>
             </div>
 
             <!-- Design Tips -->
-            <div class="mb-4">
-              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
-                <span class="text-xl mr-2">🔧</span>
+            <div class="space-y-2">
+              <h4
+                class="text-sm font-semibold text-black flex items-center gap-2"
+              >
+                <span class="text-xl">🔧</span>
                 Design Recommendations
               </h4>
               <ul
                 id="design-tips-list"
-                class="space-y-2 bg-yellow-50 p-4 rounded-lg"
+                class="space-y-2 surface-tile bg-black/60 border border-amber-400/30 rounded-2xl p-4 text-sm text-gray-700"
               >
                 <!-- Populated dynamically -->
               </ul>
             </div>
 
             <!-- Alternatives -->
-            <div id="alternatives-section" class="mb-4 hidden">
-              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
-                <span class="text-xl mr-2">🔄</span>
+            <div id="alternatives-section" class="hidden space-y-2">
+              <h4
+                class="text-sm font-semibold text-black flex items-center gap-2"
+              >
+                <span class="text-xl">🔄</span>
                 Alternative Materials
               </h4>
               <div id="alternatives-list" class="space-y-2">
@@ -663,23 +887,32 @@
             </div>
 
             <!-- Material Comparison Table -->
-            <div class="mt-6">
-              <h4 class="font-semibold text-gray-800 mb-2 flex items-center">
-                <span class="text-xl mr-2">📊</span>
+            <div class="space-y-3">
+              <h4
+                class="text-sm font-semibold text-black flex items-center gap-2"
+              >
+                <span class="text-xl">📊</span>
                 Material Comparison for Your Load
               </h4>
-              <div class="overflow-x-auto">
-                <table class="min-w-full text-sm bg-white rounded-lg">
-                  <thead class="bg-gray-100">
+              <div
+                class="overflow-x-auto rounded-2xl border border-gray-200/70"
+              >
+                <table class="min-w-full text-sm text-black">
+                  <thead
+                    class="bg-white/70 text-xs uppercase tracking-[0.3em] text-gray-500"
+                  >
                     <tr>
-                      <th class="px-4 py-2 text-left">Material</th>
-                      <th class="px-4 py-2 text-center">Safety Factor</th>
-                      <th class="px-4 py-2 text-center">Cost (₹/kg)</th>
-                      <th class="px-4 py-2 text-center">CO₂ (kg/kg)</th>
-                      <th class="px-4 py-2 text-center">Suitability</th>
+                      <th class="px-4 py-3 text-left">Material</th>
+                      <th class="px-4 py-3 text-center">Safety Factor</th>
+                      <th class="px-4 py-3 text-center">Cost (₹/kg)</th>
+                      <th class="px-4 py-3 text-center">CO₂ (kg/kg)</th>
+                      <th class="px-4 py-3 text-center">Suitability</th>
                     </tr>
                   </thead>
-                  <tbody id="comparison-table-body" class="divide-y">
+                  <tbody
+                    id="comparison-table-body"
+                    class="divide-y divide-slate-800/70"
+                  >
                     <!-- Populated dynamically -->
                   </tbody>
                 </table>
@@ -687,10 +920,10 @@
             </div>
 
             <!-- Action Button -->
-            <div class="mt-6 text-center">
+            <div class="text-center">
               <button
                 onclick="applyRecommendedMaterial()"
-                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold"
+                class="btn btn-positive px-10 heading-font"
               >
                 ✓ Apply Recommended Material
               </button>

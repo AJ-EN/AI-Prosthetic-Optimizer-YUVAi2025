@@ -6,33 +6,90 @@
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('🚀 AI Prosthetic Optimizer initialized');
     init3DViewer();
+    refreshSystemStatus();
+    setInterval(refreshSystemStatus, 30000);
 });
+
+/**
+ * Update status badge content and styling
+ */
+function setStatusBadge(elementId, text, textClass, dotClass) {
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+
+    element.className = `inline-flex items-center gap-2 ${textClass}`;
+    element.innerHTML = `
+        <span class="inline-block w-2 h-2 rounded-full ${dotClass}"></span>
+        ${text}
+    `;
+}
+
+/**
+ * Ping backend for health and update hero status widgets
+ */
+async function refreshSystemStatus() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/status`, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+            throw new Error(`Status request failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            const isOperational = data.status === 'operational';
+            setStatusBadge('status-api', isOperational ? 'Online' : 'Degraded', isOperational ? 'text-black' : 'text-gray-600', isOperational ? 'bg-black animate-pulse' : 'bg-gray-400');
+
+            const modelCount = data.models_generated ?? 0;
+            const modelText = modelCount > 0 ? `${modelCount} STL ready` : 'No STL yet';
+            setStatusBadge('status-models', modelText, modelCount > 0 ? 'text-black' : 'text-gray-600', modelCount > 0 ? 'bg-black' : 'bg-gray-400');
+
+            const versionLabel = data.version ? `v${data.version}` : 'Version N/A';
+            setStatusBadge('status-cache', versionLabel, 'text-gray-700', 'bg-gray-300');
+            return;
+        }
+
+        throw new Error('Status endpoint returned error flag');
+    } catch (error) {
+        clearTimeout(timeout);
+        setStatusBadge('status-api', 'Offline', 'text-gray-600', 'bg-gray-300');
+        setStatusBadge('status-models', 'Unavailable', 'text-gray-600', 'bg-gray-300');
+        setStatusBadge('status-cache', 'Check server', 'text-gray-600', 'bg-gray-300');
+    }
+}
 
 /**
  * Display optimization results
  */
 function displayResults(results) {
     const paretoFront = results.pareto_front;
+    currentResults = results;
 
     if (!paretoFront || paretoFront.length === 0) {
-        alert('No feasible designs found. Try relaxing constraints.');
+        showToast('No feasible designs found. Try relaxing constraints or adjusting parameters.', 'info', 6000);
         return;
     }
 
     // Clear any existing comparison
     clearComparison();
     comparisonMode = false;
-    const compareBtn = document.getElementById('compare-btn');
-    if (compareBtn) {
-        compareBtn.textContent = '🔍 Compare Designs';
-        compareBtn.className = 'px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold text-sm';
-    }
+    updateCompareButtons(false);
 
     // Show results container
     document.getElementById('no-results').classList.add('hidden');
     document.getElementById('results-container').classList.remove('hidden');
+    const primaryCompareBtn = document.getElementById('compare-btn');
+    if (primaryCompareBtn) {
+        primaryCompareBtn.classList.remove('hidden');
+    }
 
     // Render Pareto chart
     renderParetoChart(paretoFront);
@@ -74,20 +131,20 @@ function renderParetoChart(paretoFront) {
                     // Highlight selected designs for comparison
                     if (selectedDesigns.some(d => d.id === design.id)) {
                         return selectedDesigns[0]?.id === design.id ?
-                            'rgba(16, 185, 129, 0.9)' : // Green for Design A
-                            'rgba(245, 158, 11, 0.9)';  // Amber for Design B
+                            'rgba(0, 0, 0, 0.9)' : // Black for Design A
+                            'rgba(100, 100, 100, 0.8)';  // Gray for Design B
                     }
-                    return 'rgba(59, 130, 246, 0.7)';
+                    return 'rgba(150, 150, 150, 0.6)';
                 },
                 borderColor: function (context) {
                     const index = context.dataIndex;
                     const design = paretoFront[dataPoints[index].designIndex];
                     if (selectedDesigns.some(d => d.id === design.id)) {
                         return selectedDesigns[0]?.id === design.id ?
-                            'rgba(16, 185, 129, 1)' :
-                            'rgba(245, 158, 11, 1)';
+                            'rgba(0, 0, 0, 1)' :
+                            'rgba(100, 100, 100, 1)';
                     }
-                    return 'rgba(59, 130, 246, 1)';
+                    return 'rgba(150, 150, 150, 1)';
                 },
                 borderWidth: 2,
                 pointRadius: function (context) {
@@ -159,16 +216,12 @@ function renderParetoChart(paretoFront) {
             }
         }
     });
-
-    console.log(`📊 Pareto chart rendered with ${paretoFront.length} designs`);
 }
 
 /**
  * Select and display a specific design
  */
 function selectDesign(design) {
-    console.log('Selected design:', design);
-
     // Store current design ID for download
     currentDesignId = design.id;
 
@@ -180,25 +233,31 @@ function selectDesign(design) {
     // Update print readiness score with color coding
     const score = design.print_score || 0;
     const scoreElement = document.getElementById('readiness-score');
-    const containerElement = document.getElementById('readiness-container');
+    const readinessChip = document.getElementById('readiness-chip');
 
-    scoreElement.textContent = score;
+    if (scoreElement) {
+        scoreElement.textContent = Math.round(score);
+        scoreElement.className = 'mono-accent text-slate-100';
+    }
 
-    // Color code based on score
-    if (score >= 80) {
-        scoreElement.className = 'text-2xl font-bold text-green-600';
-        containerElement.className = 'bg-white p-3 rounded-lg border-2 border-green-500';
-    } else if (score >= 60) {
-        scoreElement.className = 'text-2xl font-bold text-yellow-600';
-        containerElement.className = 'bg-white p-3 rounded-lg border-2 border-yellow-500';
-    } else {
-        scoreElement.className = 'text-2xl font-bold text-red-600';
-        containerElement.className = 'bg-white p-3 rounded-lg border-2 border-red-500';
+    if (readinessChip) {
+        readinessChip.classList.remove('chip-success', 'chip-warning', 'chip-error');
+
+        if (score >= 80) {
+            readinessChip.classList.add('chip-success');
+        } else if (score >= 60) {
+            readinessChip.classList.add('chip-warning');
+        } else {
+            readinessChip.classList.add('chip-error');
+        }
     }
 
     // Update print time
     const printTime = design.print_time_hours || 0;
-    document.getElementById('readiness-time').textContent = `Print time: ~${printTime.toFixed(1)}h`;
+    const readinessTimeElement = document.getElementById('readiness-time');
+    if (readinessTimeElement) {
+        readinessTimeElement.textContent = `~${printTime.toFixed(1)} h`;
+    }
 
     // Update sustainability metrics
     const co2 = design.co2_kg || 0;
@@ -230,18 +289,28 @@ function selectDesign(design) {
 /**
  * Toggle comparison mode
  */
+function updateCompareButtons(isActive) {
+    const primaryBtn = document.getElementById('compare-btn');
+    const inlineBtn = document.getElementById('compare-btn-inline');
+
+    if (primaryBtn) {
+        primaryBtn.textContent = isActive ? '🟢 Comparison Mode: ON' : '🔍 Compare Designs';
+        primaryBtn.className = `btn ${isActive ? 'btn-secondary' : 'btn-ghost'} btn-compact text-sm`;
+    }
+
+    if (inlineBtn) {
+        inlineBtn.textContent = isActive ? '� Comparison Mode: ON' : '�🔍 Toggle Compare Mode';
+        inlineBtn.className = `btn ${isActive ? 'btn-secondary' : 'btn-ghost'} btn-compact text-xs`;
+    }
+}
+
 function toggleComparisonMode() {
     comparisonMode = !comparisonMode;
-    const button = document.getElementById('compare-btn');
+    updateCompareButtons(comparisonMode);
 
     if (comparisonMode) {
-        button.textContent = '🔍 Comparison Mode: ON';
-        button.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold';
-        showToast('🔍 Comparison Mode activated! Click on 2 designs to compare.', 'info', 4000);
+        showToast('🔍 Comparison Mode active. Select up to two designs to evaluate trade-offs.', 'info', 4000);
     } else {
-        button.textContent = '🔍 Compare Designs';
-        button.className = 'px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold';
-        // Clear selections when turning off
         clearComparison();
     }
 }
@@ -277,9 +346,9 @@ function handleComparisonSelect(design) {
         // Show partial selection
         document.getElementById('comparison-card').classList.remove('hidden');
         document.getElementById('comparison-content').innerHTML = `
-            <p class="text-sm text-gray-600 text-center py-4">
-                <span class="font-semibold text-green-600">Design ${selectedDesigns[0].id + 1}</span> selected.<br>
-                <span class="text-xs">Shift+Click or use Compare Mode to select a second design</span>
+            <p class="text-sm text-slate-300 text-center py-4">
+                <span class="font-semibold text-emerald-300">Design ${selectedDesigns[0].id + 1}</span> pinned.<br>
+                <span class="text-[11px] uppercase tracking-[0.25em] text-slate-500">Shift+Click or use Compare Mode to select a second design</span>
             </p>
         `;
     } else {
@@ -317,79 +386,80 @@ function displayComparison() {
     const formatDelta = (value, unit = '', inverse = false) => {
         const isPositive = value > 0;
         const displayPositive = inverse ? !isPositive : isPositive;
-        const color = displayPositive ? 'text-green-600' : 'text-red-600';
-        const sign = value > 0 ? '+' : '';
-        return `<span class="${color} font-semibold">${sign}${value.toFixed(value < 1 ? 3 : 2)}${unit}</span>`;
+        const color = displayPositive ? 'text-gray-900' : 'text-gray-600';
+        const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+        const precision = Math.abs(value) < 1 ? 3 : 2;
+        return `<span class="${color} font-semibold mono-accent">${sign}${Math.abs(value).toFixed(precision)}${unit}</span>`;
     };
 
     const formatPercent = (value) => {
-        const color = value > 0 ? 'text-green-600' : 'text-red-600';
-        const sign = value > 0 ? '+' : '';
-        return `<span class="${color} font-semibold">${sign}${value.toFixed(1)}%</span>`;
+        const color = value > 0 ? 'text-gray-900' : 'text-gray-600';
+        const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+        return `<span class="${color} font-semibold mono-accent">${sign}${Math.abs(value).toFixed(1)}%</span>`;
     };
 
     const comparisonHTML = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-gray-50">
+        <div class="overflow-x-auto rounded-2xl border border-gray-300">
+            <table class="min-w-full text-xs text-gray-900">
+                <thead class="bg-gray-100 text-[11px] uppercase tracking-[0.3em] text-gray-700">
                     <tr>
-                        <th class="px-3 py-2 text-left font-semibold text-gray-700">Metric</th>
-                        <th class="px-3 py-2 text-center font-semibold text-green-700">
-                            <span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span>
+                        <th class="px-4 py-3 text-left">Metric</th>
+                        <th class="px-4 py-3 text-center text-gray-900">
+                            <span class="inline-block w-2 h-2 rounded-full bg-black mr-2"></span>
                             Design ${designA.id + 1}
                         </th>
-                        <th class="px-3 py-2 text-center font-semibold text-amber-700">
-                            <span class="inline-block w-3 h-3 rounded-full bg-amber-500 mr-1"></span>
+                        <th class="px-4 py-3 text-center text-gray-700">
+                            <span class="inline-block w-2 h-2 rounded-full bg-gray-600 mr-2"></span>
                             Design ${designB.id + 1}
                         </th>
-                        <th class="px-3 py-2 text-center font-semibold text-gray-700">Δ (B - A)</th>
+                        <th class="px-4 py-3 text-center">Δ (B - A)</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 font-medium text-gray-700">Mass (g)</td>
-                        <td class="px-3 py-2 text-center">${designA.mass.toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">${designB.mass.toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">${formatDelta(massDelta, 'g', true)}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">Mass (g)</td>
+                        <td class="px-4 py-3 text-center mono-accent">${designA.mass.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center mono-accent">${designB.mass.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center">${formatDelta(massDelta, 'g', true)}</td>
                     </tr>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 font-medium text-gray-700">Cost (₹)</td>
-                        <td class="px-3 py-2 text-center">₹${designA.cost.toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">₹${designB.cost.toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">${formatDelta(costDelta, '₹', true)}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">Cost (₹)</td>
+                        <td class="px-4 py-3 text-center mono-accent">₹${designA.cost.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center mono-accent">₹${designB.cost.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center">${formatDelta(costDelta, '₹', true)}</td>
                     </tr>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 font-medium text-gray-700">Safety Factor</td>
-                        <td class="px-3 py-2 text-center">${safetyA.toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">${safetyB.toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">${formatPercent(safetyDeltaPercent)}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">Safety Factor</td>
+                        <td class="px-4 py-3 text-center mono-accent">${safetyA.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center mono-accent">${safetyB.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center">${formatPercent(safetyDeltaPercent)}</td>
                     </tr>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 font-medium text-gray-700">Print Score</td>
-                        <td class="px-3 py-2 text-center">${designA.print_score || 0}/100</td>
-                        <td class="px-3 py-2 text-center">${designB.print_score || 0}/100</td>
-                        <td class="px-3 py-2 text-center">${formatDelta(printScoreDelta, '', false)}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">Print Score</td>
+                        <td class="px-4 py-3 text-center mono-accent">${designA.print_score || 0}/100</td>
+                        <td class="px-4 py-3 text-center mono-accent">${designB.print_score || 0}/100</td>
+                        <td class="px-4 py-3 text-center">${formatDelta(printScoreDelta, '', false)}</td>
                     </tr>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 font-medium text-gray-700">CO₂ (kg)</td>
-                        <td class="px-3 py-2 text-center">${(designA.co2_kg || 0).toFixed(3)}</td>
-                        <td class="px-3 py-2 text-center">${(designB.co2_kg || 0).toFixed(3)}</td>
-                        <td class="px-3 py-2 text-center">${formatDelta(co2Delta, 'kg', true)}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">CO₂ (kg)</td>
+                        <td class="px-4 py-3 text-center mono-accent">${(designA.co2_kg || 0).toFixed(3)}</td>
+                        <td class="px-4 py-3 text-center mono-accent">${(designB.co2_kg || 0).toFixed(3)}</td>
+                        <td class="px-4 py-3 text-center">${formatDelta(co2Delta, 'kg', true)}</td>
                     </tr>
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 font-medium text-gray-700">Efficiency</td>
-                        <td class="px-3 py-2 text-center">${(designA.efficiency_index || 0).toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">${(designB.efficiency_index || 0).toFixed(2)}</td>
-                        <td class="px-3 py-2 text-center">${formatDelta(efficiencyDelta, '', false)}</td>
+                        <td class="px-4 py-3 font-medium text-gray-900">Efficiency</td>
+                        <td class="px-4 py-3 text-center mono-accent">${(designA.efficiency_index || 0).toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center mono-accent">${(designB.efficiency_index || 0).toFixed(2)}</td>
+                        <td class="px-4 py-3 text-center">${formatDelta(efficiencyDelta, '', false)}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
         
-        <div class="mt-3 text-xs text-gray-600 bg-blue-50 p-2 rounded">
-            <strong>💡 Interpretation:</strong>
-            <span class="text-green-600">Green</span> = better, 
-            <span class="text-red-600">Red</span> = worse (lower mass/cost/CO₂ are better)
+        <div class="mt-3 text-xs text-gray-700 surface-tile bg-gray-50 border border-gray-300 p-3 rounded-xl">
+            <strong class="text-gray-900">💡 Interpretation:</strong>
+            <span class="text-gray-900"> Dark values</span> signal improvement, 
+            <span class="text-gray-600">lighter values</span> indicate regression (lower mass/cost/CO₂ are better).
         </div>
     `;
 
@@ -426,7 +496,7 @@ function init3DViewer() {
 
     // Scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a202c);
+    scene.background = new THREE.Color(0xF9FAFB);
 
     // Camera
     camera = new THREE.PerspectiveCamera(45, initialWidth / initialHeight, 0.1, 1000);
@@ -438,14 +508,14 @@ function init3DViewer() {
     container.appendChild(renderer.domElement);
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x666666, 0.8);
     scene.add(ambientLight);
 
-    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight1 = new THREE.DirectionalLight(0xFFFFFF, 0.9);
     directionalLight1.position.set(1, 1, 1);
     scene.add(directionalLight1);
 
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    const directionalLight2 = new THREE.DirectionalLight(0xFFFFFF, 0.5);
     directionalLight2.position.set(-1, -1, -1);
     scene.add(directionalLight2);
 
@@ -455,7 +525,7 @@ function init3DViewer() {
     controls.dampingFactor = 0.05;
 
     // Add grid
-    const gridHelper = new THREE.GridHelper(100, 10, 0x444444, 0x222222);
+    const gridHelper = new THREE.GridHelper(100, 10, 0xCCCCCC, 0xE5E7EB);
     scene.add(gridHelper);
 
     // Animation loop
@@ -471,8 +541,6 @@ function init3DViewer() {
 
     // Ensure sizing is correct even when container starts hidden
     requestAnimationFrame(resizeViewer);
-
-    console.log('✅ 3D viewer initialized');
 }
 
 function resizeViewer() {
@@ -503,8 +571,6 @@ function resizeViewer() {
  * Load STL model into 3D viewer
  */
 function load3DModel(filename) {
-    console.log('Loading 3D model:', filename);
-
     const loader = new THREE.STLLoader();
     const modelUrl = `${API_BASE_URL}/models/${filename}`;
 
@@ -516,11 +582,11 @@ function load3DModel(filename) {
                 scene.remove(currentMesh);
             }
 
-            // Create material
+            // Create material - dark gray for white background
             const material = new THREE.MeshPhongMaterial({
-                color: 0x3b82f6,
-                specular: 0x111111,
-                shininess: 200,
+                color: 0x333333,
+                specular: 0x888888,
+                shininess: 100,
                 flatShading: false
             });
 
@@ -553,14 +619,12 @@ function load3DModel(filename) {
             }
 
             requestAnimationFrame(resizeViewer);
-
-            console.log('✅ 3D model loaded');
         },
         function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            // Progress tracking removed for production
         },
         function (error) {
-            console.error('Error loading STL:', error);
+            // Error logging minimized for production
         }
     );
 }
@@ -574,8 +638,6 @@ function load3DModel(filename) {
  * Display AI Mentor insights from optimization
  */
 function displayMentorInsights(results) {
-    console.log('📚 Displaying AI Mentor insights');
-
     // Show mentor container, hide placeholder
     document.getElementById('mentor-container').classList.remove('hidden');
     document.getElementById('mentor-placeholder').classList.add('hidden');
@@ -585,9 +647,9 @@ function displayMentorInsights(results) {
     if (results.mentor_log && results.mentor_log.length > 0) {
         logDiv.innerHTML = results.mentor_log
             .map(log => `
-                <div class="flex items-start space-x-2 p-2 hover:bg-purple-50 rounded transition">
-                    <span class="text-purple-600 text-sm">▸</span>
-                    <span class="text-sm text-gray-700">${log}</span>
+                <div class="flex items-start gap-3 p-2 rounded-xl transition bg-gray-50 hover:bg-gray-100">
+                    <span class="text-gray-700 text-sm">▸</span>
+                    <span class="text-xs text-gray-700 leading-relaxed">${log}</span>
                 </div>
             `)
             .join('');
@@ -595,7 +657,7 @@ function displayMentorInsights(results) {
         // Auto-scroll to bottom
         logDiv.scrollTop = logDiv.scrollHeight;
     } else {
-        logDiv.innerHTML = '<p class="text-gray-500 text-sm">No generation logs available</p>';
+        logDiv.innerHTML = '<p class="text-gray-500 text-xs">No generation logs available</p>';
     }
 
     // Display summary
@@ -603,7 +665,7 @@ function displayMentorInsights(results) {
     if (results.mentor_summary) {
         summaryDiv.textContent = results.mentor_summary;
     } else {
-        summaryDiv.innerHTML = '<p class="text-gray-500">No summary insights available</p>';
+        summaryDiv.innerHTML = '<p class="text-gray-500 text-sm">No summary insights available</p>';
     }
 
     // Auto-expand AI Mentor section
@@ -613,8 +675,6 @@ function displayMentorInsights(results) {
         section.classList.remove('hidden');
         if (icon) icon.textContent = '▲';
     }
-
-    console.log('✅ AI Mentor panel updated');
 }
 
 /**
@@ -625,25 +685,25 @@ function populateDesignsTable(designs) {
 
     tbody.innerHTML = designs.map(design => {
         const score = design.print_score || 0;
-        let badgeClass = 'bg-green-100 text-green-800';
-        if (score < 60) badgeClass = 'bg-red-100 text-red-800';
-        else if (score < 80) badgeClass = 'bg-yellow-100 text-yellow-800';
+        let badgeClass = 'bg-gray-100 border border-gray-400 text-gray-900';
+        if (score < 60) badgeClass = 'bg-gray-200 border border-gray-500 text-gray-700';
+        else if (score < 80) badgeClass = 'bg-gray-150 border border-gray-450 text-gray-800';
 
         const co2 = design.co2_kg || 0;
         const efficiency = design.efficiency_index || 0;
 
         return `
-            <tr class="hover:bg-gray-50 cursor-pointer" onclick="selectDesignById(${design.id})">
-                <td class="px-2 py-2">${design.id + 1}</td>
-                <td class="px-2 py-2">${design.mass.toFixed(2)}</td>
-                <td class="px-2 py-2">₹${design.cost.toFixed(2)}</td>
-                <td class="px-2 py-2">
-                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${badgeClass}">
+            <tr class="hover:bg-gray-50 cursor-pointer transition" onclick="selectDesignById(${design.id})">
+                <td class="px-3 py-3 mono-accent text-gray-700">${design.id + 1}</td>
+                <td class="px-3 py-3 mono-accent text-gray-900">${design.mass.toFixed(2)}</td>
+                <td class="px-3 py-3 mono-accent text-gray-900">₹${design.cost.toFixed(2)}</td>
+                <td class="px-3 py-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-2 ${badgeClass}">
                         ${score}/100
                     </span>
                 </td>
-                <td class="px-2 py-2 text-green-700 font-semibold">${co2.toFixed(3)}</td>
-                <td class="px-2 py-2 font-semibold">${efficiency.toFixed(2)}</td>
+                <td class="px-3 py-3 text-gray-900 font-semibold mono-accent">${co2.toFixed(3)}</td>
+                <td class="px-3 py-3 font-semibold mono-accent text-gray-900">${efficiency.toFixed(2)}</td>
             </tr>
         `;
     }).join('');
@@ -714,7 +774,8 @@ function openMaterialAdvisor() {
     document.getElementById('advisor-load').value = currentLoad;
 
     // Show modal
-    document.getElementById('advisor-modal').classList.remove('hidden');
+    const modal = document.getElementById('advisor-modal');
+    modal.style.display = 'flex';
 
     // Hide results, show form
     document.getElementById('advisor-results').classList.add('hidden');
@@ -724,7 +785,8 @@ function openMaterialAdvisor() {
  * Close material advisor modal
  */
 function closeMaterialAdvisor() {
-    document.getElementById('advisor-modal').classList.add('hidden');
+    const modal = document.getElementById('advisor-modal');
+    modal.style.display = 'none';
 }
 
 /**
