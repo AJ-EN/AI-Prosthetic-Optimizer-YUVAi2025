@@ -161,14 +161,14 @@
                 id="material-select"
                 class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300"
               >
-                <option class="bg-black text-black" value="PLA">
+                <option class="bg-white text-black" value="PLA">
                   PLA (3D Printing) - ₹25/kg
                 </option>
-                <option class="bg-black text-black" value="Aluminum6061">
-                  Aluminum 6061-T6 - ₹350/kg
+                <option class="bg-white text-black" value="Aluminum6061">
+                  Aluminum 6061 - ₹650/kg
                 </option>
-                <option class="bg-black text-black" value="Steel1045">
-                  Steel 1045 - ₹80/kg
+                <option class="bg-white text-black" value="Steel1045">
+                  Steel 1045 - ₹120/kg
                 </option>
               </select>
             </div>
@@ -332,7 +332,7 @@
             <!-- Comparison Card -->
             <div
               id="comparison-card"
-              class="hidden rounded-2xl border border-gray-300/60 bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-sky-500/10 p-5"
+              class="hidden rounded-2xl border border-gray-300 bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-sky-500/10 p-5"
             >
               <div class="flex items-center justify-between mb-3">
                 <h3
@@ -356,7 +356,7 @@
             <!-- Selected Design Info -->
             <div
               id="design-info"
-              class="rounded-2xl border border-gray-300/60 bg-white/50 p-5 space-y-4"
+              class="rounded-2xl border border-gray-300 bg-white/50 p-5 space-y-4"
             >
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <h3 class="heading-font text-lg text-black">Selected Design</h3>
@@ -535,7 +535,7 @@
 
           <div
             id="no-results"
-            class="text-center py-16 text-gray-500 border border-dashed border-gray-300/70 rounded-2xl"
+            class="text-center py-16 text-gray-500 border border-dashed border-gray-300 rounded-2xl"
           >
             <svg
               class="w-16 h-16 mx-auto mb-4 text-slate-600"
@@ -611,7 +611,7 @@
 
         <div
           id="mentor-section"
-          class="hidden border-t border-gray-200/60 bg-black/40 p-6"
+          class="hidden border-t border-gray-200 bg-white p-6"
         >
           <div id="mentor-container" class="hidden space-y-6">
             <!-- Generation Log -->
@@ -624,7 +624,7 @@
               </h3>
               <div
                 id="mentor-log"
-                class="surface-tile bg-black/60 border border-gray-200/80 rounded-2xl max-h-64 overflow-y-auto space-y-2 text-xs text-gray-700"
+                class="surface-tile bg-white border border-gray-300 rounded-2xl max-h-64 overflow-y-auto space-y-2 text-xs text-gray-700"
               >
                 <!-- Populated dynamically -->
               </div>
@@ -674,7 +674,7 @@
     <!-- Material Advisor Modal -->
     <div
       id="advisor-modal"
-      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 items-center justify-center p-4"
+      class="fixed inset-0 bg-white backdrop-blur-sm z-50 items-center justify-center p-4"
       style="display: none"
       onclick="closeModalOnBackdrop(event)"
     >
@@ -733,7 +733,7 @@
                   value="100"
                   min="1"
                   max="1000"
-                  class="w-full rounded-xl border border-gray-300/70 bg-black/80 px-4 py-3 text-sm text-black focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300/40"
                 />
               </div>
 
@@ -744,7 +744,7 @@
                 >
                 <select
                   id="advisor-environment"
-                  class="w-full rounded-xl border border-gray-300/70 bg-black/80 px-4 py-3 text-sm text-black focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300/40"
                 >
                   <option class="bg-white text-black" value="general">
                     General Use
@@ -768,7 +768,7 @@
                 >
                 <select
                   id="advisor-budget"
-                  class="w-full rounded-xl border border-gray-300/70 bg-black/80 px-4 py-3 text-sm text-black focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+                  class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-black focus:border-black focus:outline-none focus:ring-2 focus:ring-gray-300/40"
                 >
                   <option class="bg-white text-black" value="low">
                     Low (Cost-effective)
@@ -794,7 +794,7 @@
           <!-- Loading State -->
           <div
             id="advisor-loading"
-            class="hidden text-center py-10 border border-dashed border-gray-300/60 rounded-2xl bg-black/40"
+            class="hidden text-center py-10 border border-dashed border-gray-300 rounded-2xl bg-white"
           >
             <div class="loading-spinner mx-auto"></div>
             <p class="text-gray-600 mt-3">Analyzing requirements...</p>
@@ -851,7 +851,7 @@
               </h4>
               <ul
                 id="rationale-list"
-                class="space-y-2 surface-tile bg-black/60 border border-gray-200/80 rounded-2xl p-4 text-sm text-gray-700"
+                class="space-y-2 surface-tile bg-white border border-gray-300 rounded-2xl p-4 text-sm text-gray-700"
               >
                 <!-- Populated dynamically -->
               </ul>
@@ -867,7 +867,7 @@
               </h4>
               <ul
                 id="design-tips-list"
-                class="space-y-2 surface-tile bg-black/60 border border-amber-400/30 rounded-2xl p-4 text-sm text-gray-700"
+                class="space-y-2 surface-tile bg-white border border-amber-400/30 rounded-2xl p-4 text-sm text-gray-700"
               >
                 <!-- Populated dynamically -->
               </ul>
