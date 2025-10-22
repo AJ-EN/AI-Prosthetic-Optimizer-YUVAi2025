@@ -1,0 +1,41 @@
+REFERENCES
+
+[1] Deb, K., et al. (2002). A fast and elitist multiobjective genetic algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182-197.
+
+[2] Breiman, L. (2001). Random forests. Machine Learning, 45(1), 5-32.
+
+[3] Friedman, J. H. (2001). Greedy function approximation: A gradient boosting machine. Annals of Statistics, 29(5), 1189-1232.
+
+[4] Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining.
+
+[5] Gibson, I., Rosen, D., & Stucker, B. (2015). Additive Manufacturing Technologies: 3D Printing, Rapid Prototyping, and Direct Digital Manufacturing (2nd ed.). Springer.
+
+[6] Ashby, M. F. (2011). Materials Selection in Mechanical Design (4th ed.). Butterworth-Heinemann.
+
+[7] Coello Coello, C. A., Lamont, G. B., & Van Veldhuizen, D. A. (2007). Evolutionary Algorithms for Solving Multi-Objective Problems (2nd ed.). Springer.
+
+[8] ISO 10328:2016. Prosthetics — Structural testing of lower-limb prostheses.
+
+[9] ASTM F2996-13. Standard Practice for Finite Element Analysis (FEA) of Non-Modular Metallic Orthopaedic Hip Femoral Stems.
+
+[10] Hastie, T., Tibshirani, R., & Friedman, J. (2009). The Elements of Statistical Learning: Data Mining, Inference, and Prediction (2nd ed.). Springer.
+
+[11] Zitzler, E., Laumanns, M., & Thiele, L. (2001). SPEA2: Improving the Strength Pareto Evolutionary Algorithm. TIK-Report 103, ETH Zurich.
+
+[12] Miettinen, K. (1999). Nonlinear Multiobjective Optimization. Kluwer Academic Publishers.
+
+[13] Hammond, G. P., & Jones, C. I. (2008). Embodied energy and carbon in construction materials. Proceedings of the Institution of Civil Engineers - Energy, 161(2), 87-98.
+
+[14] Granta Design. (2024). CES EduPack Software. Cambridge, UK.
+
+[15] Pedregosa, F., et al. (2011). Scikit-learn: Machine Learning in Python. Journal of Machine Learning Research, 12, 2825-2830.
+
+[16] McKinney, W. (2010). Data Structures for Statistical Computing in Python. Proceedings of the 9th Python in Science Conference, 51-56.
+
+[17] Hunter, J. D. (2007). Matplotlib: A 2D graphics environment. Computing in Science & Engineering, 9(3), 90-95.
+
+[18] World Health Organization & UNICEF. (2022). Global Report on Assistive Technology. Geneva, Switzerland. https://www.who.int/publications/i/item/9789240049451
+
+[19] Donnelley, C. A., et al. (2021). Cost Analyses of Prosthetic Devices: A Systematic Review. Archives of Physical Medicine and Rehabilitation, 102(7), 1404-1421.
+
+[20] Jangid, A. (2025). AI Prosthetic Co-Designer: Implementation and Validation. GitHub Repository. https://github.com/AJ-EN/AI-Prosthetic-Optimizer-YUVAi2025
