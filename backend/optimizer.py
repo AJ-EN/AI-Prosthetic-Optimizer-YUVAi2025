@@ -275,23 +275,33 @@ def run_optimization(load=50.0, material_name='PLA', pop_size=50, n_gen=100):
 
     # Load surrogate ensemble models
     print("\nLoading surrogate ensemble models...")
-
+    
     # Get the directory of this script
     script_dir = os.path.dirname(os.path.abspath(__file__))
     stress_model_path = os.path.join(script_dir, 'data', 'stress_ensemble.pkl')
-    deflection_model_path = os.path.join(
-        script_dir, 'data', 'deflection_ensemble.pkl')
-
+    deflection_model_path = os.path.join(script_dir, 'data', 'deflection_ensemble.pkl')
+    
     print(f"Looking for models at:")
     print(f"  Stress: {stress_model_path}")
     print(f"  Deflection: {deflection_model_path}")
-
+    print(f"  Stress exists: {os.path.exists(stress_model_path)}")
+    print(f"  Deflection exists: {os.path.exists(deflection_model_path)}")
+    
+    if not os.path.exists(stress_model_path):
+        raise FileNotFoundError(f"Stress model not found at {stress_model_path}")
+    if not os.path.exists(deflection_model_path):
+        raise FileNotFoundError(f"Deflection model not found at {deflection_model_path}")
+    
     stress_models = joblib.load(stress_model_path)
     deflection_models = joblib.load(deflection_model_path)
+    
+    if stress_models is None or deflection_models is None:
+        raise ValueError("Models loaded as None - model files may be corrupted")
+    if len(stress_models) == 0 or len(deflection_models) == 0:
+        raise ValueError("Models loaded but are empty")
+    
     print(
-        f"✅ Loaded {len(stress_models)} stress models and {len(deflection_models)} deflection models")
-
-    # Define problem
+        f"✅ Loaded {len(stress_models)} stress models and {len(deflection_models)} deflection models")    # Define problem
     problem = BracketOptimizationProblem(
         load, material_name, stress_models, deflection_models)
 
