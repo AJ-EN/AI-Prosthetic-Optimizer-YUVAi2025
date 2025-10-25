@@ -26,6 +26,9 @@ CORS(app)  # Allow frontend to access API
 # Configuration
 app.config['MODELS_FOLDER'] = 'data/models'
 
+# Ensure required directories exist
+Path(app.config['MODELS_FOLDER']).mkdir(parents=True, exist_ok=True)
+
 # Cache for storing optimization results in memory (for download endpoint)
 optimization_cache = {}
 
@@ -565,9 +568,12 @@ def material_advice():
 def status():
     """Get API status and statistics."""
     try:
-        # Count available models
-        model_count = len([f for f in os.listdir(
-            app.config['MODELS_FOLDER']) if f.endswith('.stl')])
+        # Count available models (safely handle missing directory)
+        model_count = 0
+        models_dir = app.config['MODELS_FOLDER']
+        if os.path.exists(models_dir):
+            model_count = len([f for f in os.listdir(
+                models_dir) if f.endswith('.stl')])
 
         return jsonify({
             'success': True,
@@ -576,6 +582,7 @@ def status():
             'version': '1.0.0'
         })
     except Exception as e:
+        print(f"[API] Status check error: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
