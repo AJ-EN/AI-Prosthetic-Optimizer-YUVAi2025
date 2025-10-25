@@ -340,17 +340,39 @@ def run_optimization(load=50.0, material_name='PLA', pop_size=50, n_gen=100):
         verbose=True  # Show progress
     )
 
+    if result is None:
+        raise RuntimeError(
+            "Optimization failed: solver returned no result object."
+        )
+
+    if getattr(result, "F", None) is None or getattr(result, "X", None) is None:
+        exit_flag = getattr(result, "exit_flag", None)
+        message = getattr(result, "message", None)
+        raise RuntimeError(
+            "Optimization terminated before producing solutions. "
+            f"exit_flag={exit_flag}, message={message}"
+        )
+
     # Extract Pareto front solutions
     print("\n" + "=" * 70)
     print("OPTIMIZATION COMPLETE")
     print("=" * 70)
 
     n_solutions = len(result.F)
+
+    if n_solutions == 0:
+        exit_flag = getattr(result, "exit_flag", None)
+        message = getattr(result, "message", None)
+        raise RuntimeError(
+            "Optimization finished without Pareto-optimal solutions. "
+            "Try relaxing constraints or using smaller pop_size/n_gen. "
+            f"exit_flag={exit_flag}, message={message}"
+        )
+
     print(f"\n✅ Found {n_solutions} Pareto-optimal designs")
 
     # Package results
     pareto_solutions = []
-
     for i in range(n_solutions):
         params = {
             'base_length': round(result.X[i, 0], 2),
