@@ -4,7 +4,7 @@
  */
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://ai-prosthetic-optimizer-yuvai2025.onrender.com';
 
 // Global State
 let currentResults = null;
