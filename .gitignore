@@ -6,11 +6,13 @@ __pycache__/
 .Python
 env/
 venv/
-*.pkl
 
 # Data files (too large for git)
 *.stl
 training_data.csv
+# IMPORTANT: Allow trained models to be committed
+!backend/data/*_ensemble.pkl
+!backend/data/*_surrogate.pkl
 
 # IDE
 .vscode/
