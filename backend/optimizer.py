@@ -48,7 +48,16 @@ def _get_global_stress_sigma(stress_models):
     if GLOBAL_STRESS_SIGMA is not None:
         return GLOBAL_STRESS_SIGMA
 
-    data_path = os.path.join('data', 'training_data.csv')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(script_dir, 'data', 'training_data.csv')
+
+    # Training data might not be available in production
+    if not os.path.exists(data_path):
+        print(
+            f"[Uncertainty] Training data not found at {data_path}, using default sigma")
+        GLOBAL_STRESS_SIGMA = 5.0  # Default reasonable value for stress uncertainty
+        return GLOBAL_STRESS_SIGMA
+
     try:
         df = pd.read_csv(data_path)
         if df.empty:
@@ -266,8 +275,19 @@ def run_optimization(load=50.0, material_name='PLA', pop_size=50, n_gen=100):
 
     # Load surrogate ensemble models
     print("\nLoading surrogate ensemble models...")
-    stress_models = joblib.load('data/stress_ensemble.pkl')
-    deflection_models = joblib.load('data/deflection_ensemble.pkl')
+
+    # Get the directory of this script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    stress_model_path = os.path.join(script_dir, 'data', 'stress_ensemble.pkl')
+    deflection_model_path = os.path.join(
+        script_dir, 'data', 'deflection_ensemble.pkl')
+
+    print(f"Looking for models at:")
+    print(f"  Stress: {stress_model_path}")
+    print(f"  Deflection: {deflection_model_path}")
+
+    stress_models = joblib.load(stress_model_path)
+    deflection_models = joblib.load(deflection_model_path)
     print(
         f"✅ Loaded {len(stress_models)} stress models and {len(deflection_models)} deflection models")
 
